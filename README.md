@@ -191,5 +191,6 @@ For major changes, please open an issue first to discuss scope and design.
 
 ## 📄 License
 
-No license file is currently included.
-If you plan to publish broadly, add a license (e.g., MIT/Apache-2.0) before distribution.
+This project is licensed under the MIT License.
+
+See [LICENSE](LICENSE) for full text.
