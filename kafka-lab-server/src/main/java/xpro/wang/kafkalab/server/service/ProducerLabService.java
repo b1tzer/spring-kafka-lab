@@ -6,6 +6,8 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.stereotype.Service;
+import xpro.wang.kafkalab.server.model.LabRealtimeEventType;
+import xpro.wang.kafkalab.server.model.ProducerRegisterRequest;
 import xpro.wang.kafkalab.server.model.ProducerSendRequest;
 
 import java.time.Instant;
@@ -15,6 +17,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,11 +30,20 @@ public class ProducerLabService {
     private static final int MAX_RECENT_MESSAGES_PER_PARTITION = 10;
 
     private final RuntimeKafkaConnectionService runtimeKafkaConnectionService;
+    private final LabRealtimeWebSocketHandler labRealtimeWebSocketHandler;
+    private final LabActivityLogService labActivityLogService;
     private final Map<String, ProducerRuntime> activeProducers = new ConcurrentHashMap<>();
+    private final Map<String, ManagedProducer> managedProducers = new ConcurrentHashMap<>();
     private final Map<String, Deque<Map<String, Object>>> recentMessagesByPartition = new ConcurrentHashMap<>();
 
-    public ProducerLabService(RuntimeKafkaConnectionService runtimeKafkaConnectionService) {
+    public ProducerLabService(
+            RuntimeKafkaConnectionService runtimeKafkaConnectionService,
+            LabRealtimeWebSocketHandler labRealtimeWebSocketHandler,
+            LabActivityLogService labActivityLogService
+    ) {
         this.runtimeKafkaConnectionService = runtimeKafkaConnectionService;
+        this.labRealtimeWebSocketHandler = labRealtimeWebSocketHandler;
+        this.labActivityLogService = labActivityLogService;
     }
 
     /**
@@ -42,16 +54,128 @@ public class ProducerLabService {
      * @throws Exception when send fails
      */
     public int send(ProducerSendRequest request) throws Exception {
+        String producerId = UUID.randomUUID().toString();
+        return sendInternal(request, producerId, false).count();
+    }
+
+    public Map<String, Object> sendWithMetadata(ProducerSendRequest request) throws Exception {
+        String producerId = UUID.randomUUID().toString();
+        SendResult result = sendInternal(request, producerId, false);
+        return Map.of(
+                "count", result.count(),
+                "topic", request.topic(),
+                "messages", result.messages()
+        );
+    }
+
+        public Map<String, Object> registerManagedProducer(ProducerRegisterRequest request) {
+        String producerId = normalizeId(request.producerId(), "producer");
+        List<String> topics = request.topics().stream()
+            .filter(Objects::nonNull)
+            .map(String::trim)
+            .filter(topic -> !topic.isBlank())
+            .distinct()
+            .toList();
+        if (topics.isEmpty()) {
+            throw new IllegalArgumentException("Producer topics cannot be empty");
+        }
+
+        ManagedProducer managed = new ManagedProducer(
+            producerId,
+            topics,
+            Instant.now().toString(),
+            null
+        );
+        managedProducers.put(producerId, managed);
+
+        return Map.of(
+            "producerId", managed.producerId(),
+            "topics", managed.topics(),
+            "createdAt", managed.createdAt(),
+            "lastSentAt", managed.lastSentAt() == null ? "" : managed.lastSentAt()
+        );
+        }
+
+        public List<Map<String, Object>> listManagedProducers() {
+        return managedProducers.values().stream()
+            .sorted((a, b) -> a.producerId().compareToIgnoreCase(b.producerId()))
+            .map(item -> Map.of(
+                "producerId", item.producerId(),
+                "topics", item.topics(),
+                "createdAt", item.createdAt(),
+                "lastSentAt", item.lastSentAt() == null ? "" : item.lastSentAt()
+            ))
+            .toList();
+        }
+
+        public Map<String, Object> sendByManagedProducer(String producerId, ProducerSendRequest request) throws Exception {
+        ManagedProducer managed = managedProducers.get(producerId);
+        if (managed == null) {
+            throw new IllegalArgumentException("Producer not found: " + producerId);
+        }
+        if (!managed.topics().contains(request.topic())) {
+            throw new IllegalArgumentException("Topic " + request.topic() + " is not subscribed by producer " + producerId);
+        }
+
+            SendResult result = sendInternal(request, producerId, true);
+        managedProducers.computeIfPresent(producerId, (id, old) -> new ManagedProducer(
+            old.producerId(),
+            old.topics(),
+            old.createdAt(),
+            Instant.now().toString()
+        ));
+            return Map.of(
+                    "count", result.count(),
+                    "topic", request.topic(),
+                    "producerId", producerId,
+                    "messages", result.messages()
+            );
+        }
+
+    public Map<String, Object> updateManagedProducerTopics(String producerId, List<String> rawTopics) {
+        ManagedProducer managed = managedProducers.get(producerId);
+        if (managed == null) {
+            throw new IllegalArgumentException("Producer not found: " + producerId);
+        }
+
+        List<String> topics = normalizeTopics(rawTopics);
+        ManagedProducer updated = new ManagedProducer(
+                managed.producerId(),
+                topics,
+                managed.createdAt(),
+                managed.lastSentAt()
+        );
+        managedProducers.put(producerId, updated);
+        return Map.of(
+                "producerId", updated.producerId(),
+                "topics", updated.topics(),
+                "createdAt", updated.createdAt(),
+                "lastSentAt", updated.lastSentAt() == null ? "" : updated.lastSentAt()
+        );
+    }
+
+    public Map<String, Object> deleteManagedProducer(String producerId) {
+        ManagedProducer removed = managedProducers.remove(producerId);
+        if (removed == null) {
+            throw new IllegalArgumentException("Producer not found: " + producerId);
+        }
+        return Map.of(
+                "producerId", producerId,
+                "status", "DELETED"
+        );
+    }
+
+    private SendResult sendInternal(ProducerSendRequest request, String producerId, boolean managed) throws Exception {
         int count = request.count() == null ? 1 : request.count();
         long delay = request.delay() == null ? 0L : request.delay();
-        String producerId = UUID.randomUUID().toString();
+        List<Map<String, Object>> sentMessages = new ArrayList<>();
 
         activeProducers.put(producerId, new ProducerRuntime(
                 producerId,
                 request.topic(),
                 count,
                 Instant.now().toString(),
-                "RUNNING"
+            managed ? "RUNNING_MANAGED" : "RUNNING"
         ));
 
         try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerConfigs(request.transactional()))) {
@@ -59,18 +183,18 @@ public class ProducerLabService {
                 producer.initTransactions();
                 producer.beginTransaction();
                 for (int i = 0; i < count; i++) {
-                    sendOne(producer, request, i, producerId);
+                    sentMessages.add(sendOne(producer, request, i, producerId));
                     sleep(delay);
                 }
                 producer.commitTransaction();
-                return count;
+                return new SendResult(count, sentMessages);
             }
 
             for (int i = 0; i < count; i++) {
-                sendOne(producer, request, i, producerId);
+                sentMessages.add(sendOne(producer, request, i, producerId));
                 sleep(delay);
             }
-            return count;
+            return new SendResult(count, sentMessages);
         } finally {
             activeProducers.remove(producerId);
         }
@@ -90,7 +214,7 @@ public class ProducerLabService {
         return configs;
     }
 
-    private void sendOne(KafkaProducer<String, String> producer, ProducerSendRequest request, int index, String producerId) throws Exception {
+    private Map<String, Object> sendOne(KafkaProducer<String, String> producer, ProducerSendRequest request, int index, String producerId) throws Exception {
         String key = request.key();
         if (key == null || key.isBlank()) {
             key = UUID.randomUUID().toString();
@@ -113,6 +237,35 @@ public class ProducerLabService {
                 "key", key,
                 "value", payload
         ));
+
+        Map<String, Object> sent = Map.of(
+            "producerId", producerId,
+            "topic", request.topic(),
+            "partition", metadata.partition(),
+            "offset", metadata.offset(),
+            "timestamp", Instant.ofEpochMilli(metadata.timestamp()).toString(),
+            "key", key,
+            "value", payload
+        );
+
+        labRealtimeWebSocketHandler.publish(LabRealtimeEventType.PRODUCER_MESSAGE, sent);
+        Map<String, Object> activity = labActivityLogService.append(
+            "success",
+            "PRODUCE",
+            "Producer sent message",
+            request.topic(),
+            Map.of(
+                "producerId", producerId,
+                "topic", request.topic(),
+                "partition", metadata.partition(),
+                "offset", metadata.offset(),
+                "key", key,
+                "value", payload
+            )
+        );
+        labRealtimeWebSocketHandler.publish(LabRealtimeEventType.ACTIVITY_LOG, activity);
+
+        return sent;
     }
 
     public List<Map<String, Object>> activeProducers() {
@@ -157,6 +310,29 @@ public class ProducerLabService {
         return topic + "::" + partition;
     }
 
+    private String normalizeId(String raw, String prefix) {
+        if (raw != null && !raw.isBlank()) {
+            return raw.trim();
+        }
+        return prefix + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private List<String> normalizeTopics(List<String> rawTopics) {
+        if (rawTopics == null) {
+            throw new IllegalArgumentException("Producer topics cannot be empty");
+        }
+        List<String> topics = rawTopics.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(topic -> !topic.isBlank())
+                .distinct()
+                .toList();
+        if (topics.isEmpty()) {
+            throw new IllegalArgumentException("Producer topics cannot be empty");
+        }
+        return topics;
+    }
+
     private void sleep(long delay) {
         if (delay <= 0) {
             return;
@@ -175,6 +351,20 @@ public class ProducerLabService {
             int targetCount,
             String startedAt,
             String status
+    ) {
+    }
+
+        private record ManagedProducer(
+            String producerId,
+            List<String> topics,
+            String createdAt,
+            String lastSentAt
+        ) {
+        }
+
+    private record SendResult(
+            int count,
+            List<Map<String, Object>> messages
     ) {
     }
 }

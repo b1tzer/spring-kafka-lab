@@ -5,6 +5,7 @@ package xpro.wang.kafkalab.server.model;
  */
 public enum LabRealtimeAction {
     CREATED,
+    UPDATED,
     STARTED,
     STOPPED,
     DELETED,

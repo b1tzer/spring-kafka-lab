@@ -14,9 +14,9 @@ import xpro.wang.kafkalab.server.service.LabRealtimeWebSocketHandler;
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-    private final LabRealtimeWebSocketHandler labRealtimeWebSocketHandler;
+    private final @NonNull LabRealtimeWebSocketHandler labRealtimeWebSocketHandler;
 
-    public WebSocketConfig(LabRealtimeWebSocketHandler labRealtimeWebSocketHandler) {
+    public WebSocketConfig(@NonNull LabRealtimeWebSocketHandler labRealtimeWebSocketHandler) {
         this.labRealtimeWebSocketHandler = labRealtimeWebSocketHandler;
     }
 

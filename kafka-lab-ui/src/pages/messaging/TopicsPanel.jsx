@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { CloseOutlined } from '@ant-design/icons';
-import { Button, Card, Empty, Form, Input, InputNumber, Space, Spin } from 'antd';
+import { Button, Card, Empty, Form, Input, InputNumber, Space, Spin, Tag, Typography } from 'antd';
 
-const TopicsPanel = ({ form, ready, loading, topics, onCreate, onDelete }) => {
+const TopicsPanel = ({ form, ready, loading, topics, selectedTopic, onCreate, onDelete, onSelectTopic }) => {
   const [hoveredTopic, setHoveredTopic] = useState('');
 
   return (
     <Card title="Topics" bordered={false}>
       <Space direction="vertical" style={{ width: '100%' }} size={8}>
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Typography.Text strong>Click a topic to select</Typography.Text>
+          {selectedTopic ? <Tag color="blue">Selected: {selectedTopic}</Tag> : <Tag>未选择</Tag>}
+        </Space>
+
         <Form layout="inline" form={form} initialValues={{ partitionCount: 3, replicationFactor: 1 }}>
           <Form.Item name="topicName">
             <Input placeholder="标识(可空，自动生成并递增后缀)" style={{ width: 280 }} />
@@ -43,7 +48,13 @@ const TopicsPanel = ({ form, ready, loading, topics, onCreate, onDelete }) => {
                   }}
                 >
                   <Button type="text" size="small" style={{ paddingInline: 6, height: 24 }}>
-                    {topic.name}
+                    <Tag
+                      color={selectedTopic === topic.name ? 'blue' : 'default'}
+                      style={{ marginInlineEnd: 0, cursor: 'pointer' }}
+                      onClick={() => onSelectTopic(topic.name)}
+                    >
+                      {topic.name}
+                    </Tag>
                   </Button>
                   {hoveredTopic === topic.name && (
                     <Button

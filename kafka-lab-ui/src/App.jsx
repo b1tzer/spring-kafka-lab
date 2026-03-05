@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage';
 import MessagingPage from './pages/MessagingPage';
 import ScenariosPage from './pages/ScenariosPage';
 import ClusterPage from './pages/ClusterPage';
+import TopologyStudioPage from './pages/TopologyStudioPage';
 import LogsPage from './pages/LogsPage';
 import EnvironmentPage from './pages/EnvironmentPage';
 import useRunningEnvironment from './hooks/useRunningEnvironment';
@@ -14,10 +15,11 @@ const { Title } = Typography;
 
 const menus = [
   { key: 'dashboard', label: 'Dashboard' },
-  { key: 'messaging', label: 'Topics / Producer / Consumer' },
+  { key: 'messaging', label: 'Messaging Console' },
   { key: 'scenarios', label: 'Scenarios' },
   { key: 'environments', label: 'Environments' },
   { key: 'cluster', label: 'Cluster' },
+  { key: 'topology-studio', label: 'Topology Studio' },
   { key: 'logs', label: 'Logs' }
 ];
 
@@ -38,6 +40,8 @@ const App = () => {
         return <EnvironmentPage />;
       case 'cluster':
         return <ClusterPage />;
+      case 'topology-studio':
+        return <TopologyStudioPage />;
       case 'logs':
         return <LogsPage />;
       case 'dashboard':

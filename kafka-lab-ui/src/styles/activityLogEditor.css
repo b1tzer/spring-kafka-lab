@@ -1,0 +1,51 @@
+.activity-log-editor {
+  max-height: 360px;
+  overflow: auto;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #2d2d2d;
+  border-radius: 8px;
+  padding: 8px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.log-line {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: start;
+  gap: 12px;
+  padding: 0 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-line:hover {
+  background: #2a2d2e;
+}
+
+.log-line.active-match-line {
+  background: #264f78;
+}
+
+.log-line-number {
+  color: #858585;
+  text-align: right;
+  user-select: none;
+}
+
+.log-line-text {
+  color: #d4d4d4;
+}
+
+.log-mark {
+  background: #664500;
+  color: #fff;
+  padding: 0;
+}
+
+.log-mark.active {
+  background: #ffcc00;
+  color: #111;
+}

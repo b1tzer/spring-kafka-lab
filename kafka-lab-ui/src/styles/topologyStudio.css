@@ -1,0 +1,143 @@
+.topology-studio-page {
+  height: calc(100vh - 112px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topology-studio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topology-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #1e2a45;
+  background:
+    radial-gradient(circle at 25% 20%, #1f2f56 0%, transparent 42%),
+    radial-gradient(circle at 75% 75%, #182844 0%, transparent 40%),
+    #060b16;
+}
+
+.topology-canvas-wrap .react-flow {
+  background: transparent;
+}
+
+.topology-particle-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.topo-node {
+  border-radius: 12px;
+  padding: 10px;
+  color: #d9e8ff;
+  background: #0f1b35;
+  border: 1px solid #2a426c;
+  box-shadow: inset 0 0 0 1px #132447;
+}
+
+.topo-node.producer {
+  border-color: #35a1ff;
+}
+
+.topo-node.consumer {
+  border-color: #ff9b2f;
+}
+
+.topo-node.consumer.consumer-shake {
+  animation: consumerShake 0.2s ease-in-out;
+}
+
+.topo-node-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.topo-node-line {
+  font-size: 12px;
+  color: #b6c8ea;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topo-node-rate {
+  margin-top: 6px;
+  color: #eff6ff;
+  font-weight: 700;
+}
+
+.topo-broker {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed #5b6b86;
+  border-radius: 10px;
+  background: #0e1528cc;
+  color: #dce7ff;
+  padding: 8px;
+}
+
+.topo-broker-head {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.topo-broker-meta {
+  font-size: 11px;
+  color: #a8badb;
+}
+
+.topo-partition {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  border: 1px solid #74839d;
+  background: #62708b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #eef4ff;
+  font-size: 9px;
+}
+
+.topo-partition.active {
+  background: #3bbd70;
+  border-color: #7ee8ac;
+  box-shadow: 0 0 12px #3bbd7088;
+}
+
+.topo-partition.active[data-ripple='true'] {
+  animation: partitionRipple 0.2s ease-out;
+}
+
+@keyframes partitionRipple {
+  0% {
+    box-shadow: 0 0 0 0 #d1fae599;
+  }
+  100% {
+    box-shadow: 0 0 0 12px #d1fae500;
+  }
+}
+
+@keyframes consumerShake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}

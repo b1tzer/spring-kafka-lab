@@ -6,14 +6,14 @@ import useMessagingLab from '../hooks/useMessagingLab';
 import TopicsPanel from './messaging/TopicsPanel';
 import ProducerPanel from './messaging/ProducerPanel';
 import ConsumerPanel from './messaging/ConsumerPanel';
-import TopicPickerBar from './messaging/TopicPickerBar';
 import ActivityLogPanel from './messaging/ActivityLogPanel';
 
 const MessagingPage = () => {
     const [selectedTopic, setSelectedTopic] = useState('');
 
     const [topicForm] = Form.useForm();
-    const [producerForm] = Form.useForm();
+    const [producerCreateForm] = Form.useForm();
+    const [producerSendForm] = Form.useForm();
     const [consumerForm] = Form.useForm();
 
     const { ready, runningEnvironment } = useRunningEnvironment();
@@ -21,15 +21,23 @@ const MessagingPage = () => {
 
     const {
         topics,
-        groups,
+        producers,
+        consumers,
         activityLogs,
         loadingTopics,
-        loadingGroups,
+        loadingProducers,
+        loadingConsumers,
         createTopicByValues,
         deleteTopicByName,
-        sendProducerMessageByValues,
-        startConsumerByValues,
-        stopConsumerByGroupId
+        createProducerByValues,
+        sendByProducerValues,
+        createConsumerByValues,
+        startConsumerByClientId,
+        stopConsumerByClientId,
+        updateProducerTopicsById,
+        deleteProducerById,
+        updateConsumerTopicsById,
+        deleteConsumerById
     } = useMessagingLab({ ready, nextName });
 
     const topicNames = useMemo(() => topics.map((item) => item.name), [topics]);
@@ -48,21 +56,28 @@ const MessagingPage = () => {
         await createTopicByValues(values);
     };
 
+    const onCreateProducer = async () => {
+        const values = await producerCreateForm.validateFields();
+        await createProducerByValues(values);
+    };
+
     const onSendMessage = async () => {
-        const values = await producerForm.validateFields();
-        await sendProducerMessageByValues(values, selectedTopic);
+        const values = await producerSendForm.validateFields();
+        await sendByProducerValues(values, selectedTopic);
     };
 
-    const onStartConsumer = async () => {
+    const onCreateConsumer = async () => {
         const values = await consumerForm.validateFields();
-        await startConsumerByValues(values, selectedTopic);
+        await createConsumerByValues(values);
     };
 
-    const onStopConsumer = async (groupId) => stopConsumerByGroupId(groupId);
+    const onStartConsumer = async (clientId) => startConsumerByClientId(clientId, selectedTopic);
+
+    const onStopConsumer = async (clientId) => stopConsumerByClientId(clientId);
 
     return (
         <Space direction="vertical" style={{ width: '100%' }} size={12}>
-            <Typography.Title level={3}>Topics / Producer / Consumer</Typography.Title>
+            <Typography.Title level={3}>Messaging Console</Typography.Title>
             {!ready && <Alert type="warning" showIcon message="请先在 Environments 页面创建并启动一个 Kafka 环境，再进行操作" />}
             {ready && runningEnvironment && <Alert type="success" showIcon message={`当前环境：${runningEnvironment.name}`} />}
 
@@ -71,35 +86,41 @@ const MessagingPage = () => {
                 ready={ready}
                 loading={loadingTopics}
                 topics={topics}
+                selectedTopic={selectedTopic}
                 onCreate={onCreateTopic}
                 onDelete={deleteTopicByName}
-            />
-
-            <TopicPickerBar
-                topicNames={topicNames}
-                selectedTopic={selectedTopic}
-                onChange={setSelectedTopic}
-                disabled={!ready}
+                onSelectTopic={setSelectedTopic}
             />
 
             <Row gutter={16}>
                 <Col xs={24} lg={12}>
                     <ProducerPanel
-                        form={producerForm}
+                        createForm={producerCreateForm}
+                        sendForm={producerSendForm}
                         ready={ready}
                         selectedTopic={selectedTopic}
+                        topicNames={topicNames}
+                        producers={producers}
+                        loading={loadingProducers}
+                        onCreate={onCreateProducer}
                         onSend={onSendMessage}
+                        onUpdateTopics={updateProducerTopicsById}
+                        onDelete={deleteProducerById}
                     />
                 </Col>
                 <Col xs={24} lg={12}>
                     <ConsumerPanel
                         form={consumerForm}
                         ready={ready}
-                        loading={loadingGroups}
-                        groups={groups}
+                        loading={loadingConsumers}
+                        topicNames={topicNames}
+                        consumers={consumers}
                         selectedTopic={selectedTopic}
+                        onCreate={onCreateConsumer}
                         onStart={onStartConsumer}
                         onStop={onStopConsumer}
+                        onUpdateTopics={updateConsumerTopicsById}
+                        onDelete={deleteConsumerById}
                     />
                 </Col>
             </Row>

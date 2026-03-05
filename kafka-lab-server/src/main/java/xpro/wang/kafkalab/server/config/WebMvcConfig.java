@@ -1,6 +1,7 @@
 package xpro.wang.kafkalab.server.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -10,10 +11,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
 
-    private final RunningEnvironmentInterceptor runningEnvironmentInterceptor;
+    private final @NonNull RunningEnvironmentInterceptor runningEnvironmentInterceptor;
+    private final @NonNull OperationActivityInterceptor operationActivityInterceptor;
 
-    public WebMvcConfig(RunningEnvironmentInterceptor runningEnvironmentInterceptor) {
+    public WebMvcConfig(
+            @NonNull RunningEnvironmentInterceptor runningEnvironmentInterceptor,
+            @NonNull OperationActivityInterceptor operationActivityInterceptor
+    ) {
         this.runningEnvironmentInterceptor = runningEnvironmentInterceptor;
+        this.operationActivityInterceptor = operationActivityInterceptor;
     }
 
     /**
@@ -22,7 +28,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
      * @param registry interceptor registry
      */
     @Override
-    public void addInterceptors(InterceptorRegistry registry) {
+    public void addInterceptors(@NonNull InterceptorRegistry registry) {
         registry.addInterceptor(runningEnvironmentInterceptor)
                 .addPathPatterns(
                         "/topics/**",
@@ -33,5 +39,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/dashboard",
                         "/scenario/**"
                 );
+
+                registry.addInterceptor(operationActivityInterceptor)
+                    .addPathPatterns("/**");
     }
 }

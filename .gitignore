@@ -5,6 +5,10 @@ kafka-lab-server/target/
 kafka-lab-ui/node_modules/
 kafka-lab-ui/dist/
 
+# Runtime artifacts
+/runtime/
+/kafka-lab-server/runtime/
+
 # IDE
 .vscode/
 .idea/
