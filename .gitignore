@@ -1,0 +1,14 @@
+# Java
+kafka-lab-server/target/
+
+# Node
+kafka-lab-ui/node_modules/
+kafka-lab-ui/dist/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store

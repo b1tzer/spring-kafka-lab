@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: kafka-lab-server
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka1:9092,kafka2:9092,kafka3:9092}
+    producer:
+      retries: 3
+      acks: all
+      properties:
+        '[enable.idempotence]': true
+    consumer:
+      auto-offset-reset: earliest
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+kafka-lab:
+  default-topic: lab-topic
+  env:
+    root: ${KAFKA_LAB_ENV_ROOT:./runtime/environments}
+    workspace-root: ${KAFKA_LAB_WORKSPACE_ROOT:${user.dir}}
+    docker-config: ${KAFKA_LAB_DOCKER_CONFIG:}
+
+logging:
+  level:
+    '[org.apache.kafka.clients.NetworkClient]': ERROR

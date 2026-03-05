@@ -1,0 +1,200 @@
+.traffic-card {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.producer-pulse {
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.35);
+  border-color: rgba(82, 196, 26, 0.5);
+}
+
+.consumer-pulse {
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.35);
+  border-color: rgba(22, 119, 255, 0.5);
+}
+
+.topology-graph {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.graph-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.node-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node-card {
+  min-width: 120px;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.producer-node {
+  border-left: 4px solid #52c41a;
+}
+
+.consumer-node {
+  border-left: 4px solid #1677ff;
+}
+
+.node-main {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.node-sub {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+
+.node-pulse {
+  animation: nodePulse 0.8s ease;
+}
+
+@keyframes nodePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.link-line {
+  height: 4px;
+  flex: 1;
+  background: #d9d9d9;
+  border-radius: 999px;
+}
+
+.link-producer-animate {
+  background: linear-gradient(90deg, #b7eb8f, #52c41a, #b7eb8f);
+  background-size: 200% 100%;
+  animation: lineFlowForward 0.9s linear;
+}
+
+.link-consumer-animate {
+  background: linear-gradient(270deg, #91caff, #1677ff, #91caff);
+  background-size: 200% 100%;
+  animation: lineFlowBackward 0.9s linear;
+}
+
+@keyframes lineFlowForward {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 200% 0%;
+  }
+}
+
+@keyframes lineFlowBackward {
+  from {
+    background-position: 200% 0%;
+  }
+  to {
+    background-position: 0% 0%;
+  }
+}
+
+.kafka-core {
+  background: #fafafa;
+  border: 1px solid #d9d9d9;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.kafka-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.broker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.broker-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.cluster-meta {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.memory-board {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 6px;
+  background: #fafafa;
+}
+
+.memory-row {
+  display: grid;
+  grid-template-columns: 170px 100px 190px 1fr 170px;
+  gap: 6px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+
+.memory-cell {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.memory-key {
+  color: #1677ff;
+}
+
+.memory-offset {
+  color: #52c41a;
+}
+
+.memory-producer {
+  color: #8c8c8c;
+}
+
+@media (max-width: 1100px) {
+  .topology-graph {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-row {
+    grid-template-columns: 1fr;
+  }
+}
