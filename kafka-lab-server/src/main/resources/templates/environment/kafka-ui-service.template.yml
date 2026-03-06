@@ -1,0 +1,9 @@
+  kafka-ui:
+    image: {{KAFKA_UI_IMAGE}}
+    ports:
+      - "{{KAFKA_UI_PORT}}:8080"
+    depends_on:
+{{BROKER_DEPENDS_ON}}
+    environment:
+      KAFKA_CLUSTERS_0_NAME: {{PROJECT_NAME}}
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: {{INTERNAL_BOOTSTRAP_SERVERS}}

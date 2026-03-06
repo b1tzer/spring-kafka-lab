@@ -1,6 +1,8 @@
 package xpro.wang.kafkalab.server.service;
 
 import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.ConsumerGroupDescription;
@@ -30,6 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 public class ConsumerLabService {
+
+    private static final Logger log = LoggerFactory.getLogger(ConsumerLabService.class);
 
     private final RuntimeKafkaConnectionService runtimeKafkaConnectionService;
     private final LabRealtimeWebSocketHandler labRealtimeWebSocketHandler;
@@ -63,6 +67,8 @@ public class ConsumerLabService {
                 null
         );
         managedConsumers.put(clientId, managedConsumer);
+        log.info("Managed consumer registered: clientId={}, groupId={}, topics={}, autoCommit={}",
+            clientId, groupId, topics, managedConsumer.autoCommit());
         return toMap(managedConsumer);
     }
 
@@ -113,6 +119,8 @@ public class ConsumerLabService {
         ConsumerWorker worker = new ConsumerWorker(managed);
         workers.put(clientId, worker);
         worker.start();
+        log.info("Managed consumer started: clientId={}, groupId={}, topics={}",
+            managed.clientId(), managed.groupId(), managed.topics());
 
         ManagedConsumer updated = new ManagedConsumer(
                 managed.clientId(),
@@ -138,6 +146,7 @@ public class ConsumerLabService {
         if (worker != null) {
             worker.stop();
         }
+        log.info("Managed consumer stopped: clientId={}, groupId={}", managed.clientId(), managed.groupId());
 
         ManagedConsumer updated = new ManagedConsumer(
                 managed.clientId(),
@@ -184,6 +193,8 @@ public class ConsumerLabService {
             worker.start();
         }
 
+        log.info("Managed consumer topics updated: clientId={}, topics={}, restarted={}", clientId, topics, wasRunning);
+
         return toMap(updated);
     }
 
@@ -198,6 +209,8 @@ public class ConsumerLabService {
             throw new IllegalArgumentException("Consumer not found: " + clientId);
         }
 
+        log.info("Managed consumer deleted: clientId={}, groupId={}", removed.clientId(), removed.groupId());
+
         return Map.of(
                 "clientId", clientId,
                 "groupId", removed.groupId(),
@@ -206,6 +219,7 @@ public class ConsumerLabService {
     }
 
     public Map<String, Object> listGroups() throws Exception {
+        log.info("Listing consumer groups from Kafka");
         try (AdminClient adminClient = adminClient()) {
             Collection<String> groups = adminClient.listConsumerGroups().all().get().stream()
                     .map(group -> group.groupId())
@@ -251,6 +265,7 @@ public class ConsumerLabService {
 
     @PreDestroy
     public void destroy() {
+        log.info("Destroying consumer workers: count={}", workers.size());
         workers.values().forEach(ConsumerWorker::stop);
         workers.clear();
     }
@@ -336,6 +351,7 @@ public class ConsumerLabService {
             thread = new Thread(this::runLoop, "consumer-worker-" + managed.clientId());
             thread.setDaemon(true);
             thread.start();
+            log.info("Consumer worker thread started: threadName={}", thread.getName());
         }
 
         private boolean running() {
@@ -346,12 +362,14 @@ public class ConsumerLabService {
             running = false;
             if (thread != null) {
                 thread.interrupt();
+                log.info("Consumer worker thread interrupted: threadName={}", thread.getName());
             }
         }
 
         private void runLoop() {
             try (KafkaConsumer<String, String> consumer = consumerOf(managed)) {
                 consumer.subscribe(managed.topics());
+                log.info("Consumer worker subscribed: clientId={}, topics={}", managed.clientId(), managed.topics());
 
                 while (running) {
                     ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
@@ -394,6 +412,7 @@ public class ConsumerLabService {
                 }
             } catch (Exception ex) {
                 running = false;
+                log.error("Consumer worker failed: clientId={}, groupId={}", managed.clientId(), managed.groupId(), ex);
             }
         }
     }

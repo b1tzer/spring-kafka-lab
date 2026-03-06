@@ -7,6 +7,8 @@ export const deleteTopic = (name) => unwrap(api.delete(`/topics/${name}`));
 
 export const sendMessage = (payload) => unwrap(api.post('/producer/send', payload));
 export const sendByProducer = (producerId, payload) => unwrap(api.post(`/producer/${producerId}/send`, payload));
+export const startProducerAutoSend = (producerId, payload) => unwrap(api.post(`/producer/${producerId}/auto/start`, payload));
+export const stopProducerAutoSend = (producerId) => unwrap(api.post(`/producer/${producerId}/auto/stop`));
 export const registerProducer = (payload) => unwrap(api.post('/producer/register', payload));
 export const fetchManagedProducers = () => unwrap(api.get('/producer/managed'));
 export const updateProducerTopics = (producerId, topics) => unwrap(api.put(`/producer/${producerId}/topics`, { topics }));

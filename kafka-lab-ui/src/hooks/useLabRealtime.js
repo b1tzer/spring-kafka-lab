@@ -2,6 +2,65 @@ import { useEffect, useRef } from 'react';
 
 const RECONNECT_DELAY_MS = 1500;
 
+const normalizeWsUrl = (rawUrl) => {
+  if (!rawUrl) {
+    return '';
+  }
+
+  const url = String(rawUrl).trim();
+  if (!url) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(url)) {
+    const converted = url.replace(/^http/i, 'ws');
+    try {
+      new URL(converted);
+      return converted;
+    } catch (_error) {
+      return '';
+    }
+  }
+
+  if (/^ws:\/\//i.test(url) || /^wss:\/\//i.test(url)) {
+    try {
+      new URL(url);
+      return url;
+    } catch (_error) {
+      return '';
+    }
+  }
+
+  if (/^wss?:/i.test(url)) {
+    const secure = /^wss:/i.test(url);
+    const converted = `${secure ? 'wss' : 'ws'}://${url.replace(/^wss?:\/*/i, '')}`;
+    try {
+      new URL(converted);
+      return converted;
+    } catch (_error) {
+      return '';
+    }
+  }
+
+  if (url.startsWith('/')) {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const converted = `${protocol}://${window.location.host}${url}`;
+    try {
+      new URL(converted);
+      return converted;
+    } catch (_error) {
+      return '';
+    }
+  }
+
+  try {
+    new URL(url);
+    return url;
+  } catch (_error) {
+    return '';
+  }
+};
+
 const buildWsCandidates = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
   const envWsUrl = import.meta.env.VITE_LAB_WS_URL;
@@ -9,7 +68,10 @@ const buildWsCandidates = () => {
   const candidates = [];
 
   if (envWsUrl) {
-    candidates.push(envWsUrl);
+    const normalizedEnvWsUrl = normalizeWsUrl(envWsUrl);
+    if (normalizedEnvWsUrl) {
+      candidates.push(normalizedEnvWsUrl);
+    }
   }
 
   if (envApiBase && /^https?:\/\//i.test(envApiBase)) {
@@ -73,7 +135,6 @@ const useLabRealtime = (onEvent) => {
       };
 
       ws.onerror = () => {
-        ws.close();
       };
     };
 
@@ -85,8 +146,12 @@ const useLabRealtime = (onEvent) => {
         window.clearTimeout(reconnectTimer);
       }
       if (ws) {
-        ws.close();
-      }
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        } else if (ws.readyState === WebSocket.CONNECTING) {
+          ws.onopen = () => ws.close();
+        }
+      };
     };
   }, []);
 };

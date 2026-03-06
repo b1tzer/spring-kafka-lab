@@ -23,6 +23,7 @@ import {
 } from '../api/kafkaLabApi';
 import useLabRealtime from '../hooks/useLabRealtime';
 import { LAB_REALTIME_EVENT_TYPE } from '../constants/labDomain';
+import { extractFailureReason, showApiError, showErrorWithCopy } from '../utils/errorFeedback';
 
 const EnvironmentPage = () => {
   const [form] = Form.useForm();
@@ -52,43 +53,85 @@ const EnvironmentPage = () => {
   });
 
   const onCreate = async () => {
-    const values = await form.validateFields();
-    await createEnvironment(values);
-    message.success('Environment created');
-    form.resetFields();
-    load();
+    try {
+      const values = await form.validateFields();
+      await createEnvironment(values);
+      message.success('Environment created');
+      form.resetFields();
+      load();
+    } catch (error) {
+      showApiError('Environment create failed', error);
+    }
   };
 
   const onStart = async (id) => {
-    const res = await startEnvironment(id);
-    message.info(res.data?.success ? 'Start success' : 'Start failed');
-    load();
+    try {
+      const res = await startEnvironment(id);
+      if (res.data?.success) {
+        message.success('Start success');
+      } else {
+        showErrorWithCopy('Start failed', extractFailureReason(res, 'Start failed'));
+      }
+      load();
+    } catch (error) {
+      showApiError('Start failed', error);
+    }
   };
 
   const onStop = async (id) => {
-    const res = await stopEnvironment(id);
-    message.info(res.data?.success ? 'Stop success' : 'Stop failed');
-    load();
+    try {
+      const res = await stopEnvironment(id);
+      if (res.data?.success) {
+        message.success('Stop success');
+      } else {
+        showErrorWithCopy('Stop failed', extractFailureReason(res, 'Stop failed'));
+      }
+      load();
+    } catch (error) {
+      showApiError('Stop failed', error);
+    }
   };
 
   const onDelete = async (id) => {
-    const res = await deleteEnvironment(id);
-    message.info(res.data?.success ? 'Delete success' : 'Delete failed');
-    load();
+    try {
+      const res = await deleteEnvironment(id);
+      if (res.data?.success) {
+        message.success('Delete success');
+      } else {
+        showErrorWithCopy('Delete failed', extractFailureReason(res, 'Delete failed'));
+      }
+      load();
+    } catch (error) {
+      showApiError('Delete failed', error);
+    }
   };
 
   const onStatus = async (id) => {
-    const res = await environmentStatus(id);
-    if (res.data?.output) {
-      message.success('Status fetched');
+    try {
+      const res = await environmentStatus(id);
+      if (res.data?.success && res.data?.output) {
+        message.success('Status fetched');
+      } else if (!res.data?.success) {
+        showErrorWithCopy('Status failed', extractFailureReason(res, 'Status failed'));
+      }
+      load();
+    } catch (error) {
+      showApiError('Status failed', error);
     }
-    load();
   };
 
   const onLogs = async (id) => {
-    const res = await environmentLogs(id, 120);
-    setLogsContent(res.data?.output || 'No logs');
-    setLogsVisible(true);
+    try {
+      const res = await environmentLogs(id, 120);
+      if (res.data?.success) {
+        setLogsContent(res.data?.output || 'No logs');
+        setLogsVisible(true);
+      } else {
+        showErrorWithCopy('Fetch logs failed', extractFailureReason(res, 'Fetch logs failed'));
+      }
+    } catch (error) {
+      showApiError('Fetch logs failed', error);
+    }
   };
 
   return (

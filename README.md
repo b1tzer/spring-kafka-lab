@@ -84,7 +84,6 @@ Kafka Cluster (multi-broker lab env) + Kafka UI
 
 ```text
 .
-├─ docker/                  # compose for baseline local run
 ├─ docs/                    # architecture and scenario docs
 ├─ kafka-lab-server/        # Spring Boot backend
 ├─ kafka-lab-ui/            # React frontend
@@ -101,19 +100,7 @@ Kafka Cluster (multi-broker lab env) + Kafka UI
 - Node.js 20+
 - Maven 3.9+
 
-### Option A: One-command (infra + app)
-
-```bash
-cd docker
-docker compose up -d --build
-```
-
-Open:
-- Kafka Lab UI: http://localhost:5173
-- Kafka Lab Server: http://localhost:8080
-- Kafka UI: http://localhost:8085
-
-### Option B: Local dev split mode
+### Local dev split mode
 
 Backend:
 ```bash
@@ -127,6 +114,12 @@ cd kafka-lab-ui
 npm install
 npm run dev
 ```
+
+Open:
+- Kafka Lab UI: http://localhost:5173
+- Kafka Lab Server: http://localhost:8080
+
+Then create/start lab Kafka environments from the UI (**Environments** page).
 
 ---
 

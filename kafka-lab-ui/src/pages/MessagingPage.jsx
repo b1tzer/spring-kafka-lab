@@ -13,6 +13,7 @@ const MessagingPage = () => {
 
     const [topicForm] = Form.useForm();
     const [producerCreateForm] = Form.useForm();
+    const [producerAutoForm] = Form.useForm();
     const [producerSendForm] = Form.useForm();
     const [consumerForm] = Form.useForm();
 
@@ -30,6 +31,8 @@ const MessagingPage = () => {
         createTopicByValues,
         deleteTopicByName,
         createProducerByValues,
+        startProducerAutoByValues,
+        stopProducerAutoById,
         sendByProducerValues,
         createConsumerByValues,
         startConsumerByClientId,
@@ -66,6 +69,11 @@ const MessagingPage = () => {
         await sendByProducerValues(values, selectedTopic);
     };
 
+    const onStartProducerAuto = async () => {
+        const values = await producerAutoForm.validateFields();
+        await startProducerAutoByValues(values);
+    };
+
     const onCreateConsumer = async () => {
         const values = await consumerForm.validateFields();
         await createConsumerByValues(values);
@@ -96,6 +104,7 @@ const MessagingPage = () => {
                 <Col xs={24} lg={12}>
                     <ProducerPanel
                         createForm={producerCreateForm}
+                        autoForm={producerAutoForm}
                         sendForm={producerSendForm}
                         ready={ready}
                         selectedTopic={selectedTopic}
@@ -103,6 +112,8 @@ const MessagingPage = () => {
                         producers={producers}
                         loading={loadingProducers}
                         onCreate={onCreateProducer}
+                        onStartAuto={onStartProducerAuto}
+                        onStopAuto={stopProducerAutoById}
                         onSend={onSendMessage}
                         onUpdateTopics={updateProducerTopicsById}
                         onDelete={deleteProducerById}

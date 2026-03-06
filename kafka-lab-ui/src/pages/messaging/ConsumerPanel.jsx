@@ -18,7 +18,7 @@ const ConsumerPanel = ({
   const [editingTopics, setEditingTopics] = useState([]);
 
   return (
-    <Card title="Consumer Management" bordered={false}>
+    <Card title="Consumer Management" variant="borderless">
       <Space direction="vertical" style={{ width: '100%' }}>
         <Alert
           type={selectedTopic ? 'info' : 'warning'}

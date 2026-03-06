@@ -1,0 +1,6 @@
+version: '3.8'
+
+services:
+{{BROKER_SERVICES}}
+
+{{KAFKA_UI_SERVICE}}

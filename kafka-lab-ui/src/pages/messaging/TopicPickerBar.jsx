@@ -7,7 +7,7 @@ const TopicPickerBar = ({ topicNames, selectedTopic, onChange, disabled }) => {
   const quickTopics = topicNames.slice(0, QUICK_TOPIC_LIMIT);
 
   return (
-    <Card size="small" bordered={false}>
+    <Card size="small" variant="borderless">
       <Space direction="vertical" style={{ width: '100%' }} size={8}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Typography.Text strong>Active Topic</Typography.Text>

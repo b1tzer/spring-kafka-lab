@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import xpro.wang.kafkalab.server.model.ApiResponse;
 import xpro.wang.kafkalab.server.model.LabRealtimeAction;
 import xpro.wang.kafkalab.server.model.LabRealtimeEventType;
+import xpro.wang.kafkalab.server.model.ProducerAutoSendRequest;
 import xpro.wang.kafkalab.server.model.ProducerRegisterRequest;
 import xpro.wang.kafkalab.server.model.ProducerSendRequest;
 import xpro.wang.kafkalab.server.model.SubscriptionTopicsUpdateRequest;
@@ -107,5 +108,31 @@ public class ProducerController {
                 "producerId", producerId
         ));
         return ApiResponse.ok("Producer deleted", data);
+    }
+
+    @PostMapping("/{producerId}/auto/start")
+    public ApiResponse<Map<String, Object>> startAutoSend(
+            @PathVariable String producerId,
+            @Valid @RequestBody ProducerAutoSendRequest request) {
+        Map<String, Object> data = producerLabService.startAutoSendTask(producerId, request);
+        labRealtimeWebSocketHandler.publish(LabRealtimeEventType.PRODUCER_CHANGED, Map.of(
+                "action", LabRealtimeAction.STARTED.name(),
+                "producerId", producerId,
+                "autoTask", true,
+                "topic", request.topic(),
+                "frequencyPerSecond", request.frequencyPerSecond() == null ? 1.0d : request.frequencyPerSecond()
+        ));
+        return ApiResponse.ok("Producer auto-send started", data);
+    }
+
+    @PostMapping("/{producerId}/auto/stop")
+    public ApiResponse<Map<String, Object>> stopAutoSend(@PathVariable String producerId) {
+        Map<String, Object> data = producerLabService.stopAutoSendTask(producerId);
+        labRealtimeWebSocketHandler.publish(LabRealtimeEventType.PRODUCER_CHANGED, Map.of(
+                "action", LabRealtimeAction.STOPPED.name(),
+                "producerId", producerId,
+                "autoTask", true
+        ));
+        return ApiResponse.ok("Producer auto-send stopped", data);
     }
 }

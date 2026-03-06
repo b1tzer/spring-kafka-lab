@@ -11,6 +11,8 @@ import {
   registerConsumer,
   registerProducer,
   sendByProducer,
+  startProducerAutoSend,
+  stopProducerAutoSend,
   startManagedConsumer,
   stopManagedConsumer,
   updateManagedConsumerTopics,
@@ -18,6 +20,7 @@ import {
 } from '../api/kafkaLabApi';
 import useLabRealtime from './useLabRealtime';
 import { LAB_REALTIME_EVENT_TYPE } from '../constants/labDomain';
+import { showApiError } from '../utils/errorFeedback';
 
 const MAX_LOGS = 120;
 
@@ -53,8 +56,6 @@ const useMessagingLab = ({ ready, nextName }) => {
     message.warning('请先在 Environments 页面创建并启动环境');
     return false;
   }, [ready]);
-
-  const getErrorText = (error) => error?.response?.data?.message || error?.message || 'Unknown error';
 
   const loadTopics = useCallback(async () => {
     setLoadingTopics(true);
@@ -155,7 +156,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Topic created: ${topicName}`);
       await loadTopics();
     } catch (error) {
-      message.error(`Topic create failed: ${getErrorText(error)}`);
+      showApiError('Topic create failed', error);
     }
   }, [ensureReady, nextName, topicNameSet, loadTopics]);
 
@@ -168,7 +169,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success('Topic deleted');
       await loadTopics();
     } catch (error) {
-      message.error(`Topic delete failed: ${getErrorText(error)}`);
+      showApiError('Topic delete failed', error);
     }
   }, [ensureReady, loadTopics]);
 
@@ -182,9 +183,38 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Producer added: ${producerId}`);
       await loadProducers();
     } catch (error) {
-      message.error(`Producer create failed: ${getErrorText(error)}`);
+      showApiError('Producer create failed', error);
     }
   }, [ensureReady, nextName, producerIdSet, loadProducers]);
+
+  const startProducerAutoByValues = useCallback(async (values) => {
+    if (!ensureReady()) {
+      return;
+    }
+    try {
+      await startProducerAutoSend(values.producerId, {
+        topic: values.topic,
+        frequencyPerSecond: values.frequencyPerSecond
+      });
+      message.success(`Auto send started: ${values.producerId}`);
+      await loadProducers();
+    } catch (error) {
+      showApiError('Start auto send failed', error);
+    }
+  }, [ensureReady, loadProducers]);
+
+  const stopProducerAutoById = useCallback(async (producerId) => {
+    if (!ensureReady()) {
+      return;
+    }
+    try {
+      await stopProducerAutoSend(producerId);
+      message.success(`Auto send stopped: ${producerId}`);
+      await loadProducers();
+    } catch (error) {
+      showApiError('Stop auto send failed', error);
+    }
+  }, [ensureReady, loadProducers]);
 
   const sendByProducerValues = useCallback(async (values, selectedTopic) => {
     if (!ensureReady()) {
@@ -208,7 +238,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Message sent by ${values.producerId}`);
       await loadProducers();
     } catch (error) {
-      message.error(`Message send failed: ${getErrorText(error)}`);
+      showApiError('Message send failed', error);
     }
   }, [ensureReady, topicNameSet, loadProducers]);
 
@@ -229,7 +259,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Consumer added: ${clientId}`);
       await loadConsumers();
     } catch (error) {
-      message.error(`Consumer create failed: ${getErrorText(error)}`);
+      showApiError('Consumer create failed', error);
     }
   }, [ensureReady, nextName, consumerGroupSet, consumerIdSet, loadConsumers]);
 
@@ -247,7 +277,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Consumer started: ${clientId}`);
       await loadConsumers();
     } catch (error) {
-      message.error(`Consumer start failed: ${getErrorText(error)}`);
+      showApiError('Consumer start failed', error);
     }
   }, [ensureReady, consumers, loadConsumers]);
 
@@ -260,7 +290,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Consumer stopped: ${clientId}`);
       await loadConsumers();
     } catch (error) {
-      message.error(`Consumer stop failed: ${getErrorText(error)}`);
+      showApiError('Consumer stop failed', error);
     }
   }, [ensureReady, loadConsumers]);
 
@@ -273,7 +303,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Producer updated: ${producerId}`);
       await loadProducers();
     } catch (error) {
-      message.error(`Producer update failed: ${getErrorText(error)}`);
+      showApiError('Producer update failed', error);
     }
   }, [ensureReady, loadProducers]);
 
@@ -286,7 +316,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Producer deleted: ${producerId}`);
       await loadProducers();
     } catch (error) {
-      message.error(`Producer delete failed: ${getErrorText(error)}`);
+      showApiError('Producer delete failed', error);
     }
   }, [ensureReady, loadProducers]);
 
@@ -299,7 +329,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Consumer updated: ${clientId}`);
       await loadConsumers();
     } catch (error) {
-      message.error(`Consumer update failed: ${getErrorText(error)}`);
+      showApiError('Consumer update failed', error);
     }
   }, [ensureReady, loadConsumers]);
 
@@ -312,7 +342,7 @@ const useMessagingLab = ({ ready, nextName }) => {
       message.success(`Consumer deleted: ${clientId}`);
       await loadConsumers();
     } catch (error) {
-      message.error(`Consumer delete failed: ${getErrorText(error)}`);
+      showApiError('Consumer delete failed', error);
     }
   }, [ensureReady, loadConsumers]);
 
@@ -327,6 +357,8 @@ const useMessagingLab = ({ ready, nextName }) => {
     createTopicByValues,
     deleteTopicByName,
     createProducerByValues,
+    startProducerAutoByValues,
+    stopProducerAutoById,
     sendByProducerValues,
     createConsumerByValues,
     startConsumerByClientId,

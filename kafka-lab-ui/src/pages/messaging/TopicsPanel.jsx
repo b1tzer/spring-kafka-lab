@@ -6,7 +6,7 @@ const TopicsPanel = ({ form, ready, loading, topics, selectedTopic, onCreate, on
   const [hoveredTopic, setHoveredTopic] = useState('');
 
   return (
-    <Card title="Topics" bordered={false}>
+    <Card title="Topics" variant="borderless">
       <Space direction="vertical" style={{ width: '100%' }} size={8}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Typography.Text strong>Click a topic to select</Typography.Text>

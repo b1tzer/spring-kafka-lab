@@ -157,7 +157,7 @@ const ActivityLogPanel = ({ logs }) => {
   };
 
   return (
-    <Card title="Activity Logs" bordered={false} size="small">
+    <Card title="Activity Logs" variant="borderless" size="small">
       <Space wrap style={{ marginBottom: 8, width: '100%', justifyContent: 'space-between' }}>
         <Space wrap>
           <Select
