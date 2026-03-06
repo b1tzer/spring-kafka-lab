@@ -12,9 +12,7 @@ import jakarta.validation.constraints.NotBlank;
  * @param autoCommit whether auto commit is enabled
  */
 public record ConsumerStartRequest(
-        @NotBlank String groupId,
-        @NotBlank String topic,
-        @Min(1) Integer concurrency,
-        Boolean autoCommit
-) {
-}
+    @NotBlank String groupId,
+    @NotBlank String topic,
+    @Min(1) Integer concurrency,
+    Boolean autoCommit) {}

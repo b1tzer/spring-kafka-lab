@@ -1,5 +1,16 @@
-import React, { useState } from 'react';
-import { Alert, Button, Card, Form, Input, Select, Space, Table, Tag, Popconfirm } from 'antd';
+import React, { useState } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Popconfirm,
+} from "antd";
 
 const ConsumerPanel = ({
   form,
@@ -12,33 +23,44 @@ const ConsumerPanel = ({
   onStart,
   onStop,
   onUpdateTopics,
-  onDelete
+  onDelete,
 }) => {
-  const [editingClientId, setEditingClientId] = useState('');
+  const [editingClientId, setEditingClientId] = useState("");
   const [editingTopics, setEditingTopics] = useState([]);
 
   return (
     <Card title="Consumer Management" variant="borderless">
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space direction="vertical" style={{ width: "100%" }}>
         <Alert
-          type={selectedTopic ? 'info' : 'warning'}
+          type={selectedTopic ? "info" : "warning"}
           showIcon
-          message={selectedTopic
-            ? `Selected Topic: ${selectedTopic}（Consumer 必须订阅该 Topic 才能消费）`
-            : '请在 Topics 中点击选择一个 Topic'}
+          message={
+            selectedTopic
+              ? `Selected Topic: ${selectedTopic}（Consumer 必须订阅该 Topic 才能消费）`
+              : "请在 Topics 中点击选择一个 Topic"
+          }
         />
 
         <Form layout="inline" form={form} initialValues={{ autoCommit: true }}>
           <Form.Item name="groupId">
-            <Input placeholder="Group ID (可空自动生成)" style={{ width: 170 }} />
+            <Input
+              placeholder="Group ID (可空自动生成)"
+              style={{ width: 170 }}
+            />
           </Form.Item>
           <Form.Item name="clientId">
-            <Input placeholder="Client ID (可空自动生成)" style={{ width: 190 }} />
+            <Input
+              placeholder="Client ID (可空自动生成)"
+              style={{ width: 190 }}
+            />
           </Form.Item>
           <Form.Item name="hostIp">
             <Input placeholder="Host IP" style={{ width: 150 }} />
           </Form.Item>
-          <Form.Item name="topics" rules={[{ required: true, message: '至少选择一个 Topic' }]}>
+          <Form.Item
+            name="topics"
+            rules={[{ required: true, message: "至少选择一个 Topic" }]}
+          >
             <Select
               mode="multiple"
               placeholder="订阅 Topics"
@@ -48,7 +70,9 @@ const ConsumerPanel = ({
             />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" onClick={onCreate} disabled={!ready}>Add Consumer</Button>
+            <Button type="primary" onClick={onCreate} disabled={!ready}>
+              Add Consumer
+            </Button>
           </Form.Item>
         </Form>
 
@@ -59,12 +83,12 @@ const ConsumerPanel = ({
           pagination={false}
           size="small"
           columns={[
-            { title: 'Client', dataIndex: 'clientId' },
-            { title: 'Group', dataIndex: 'groupId' },
-            { title: 'Host', dataIndex: 'hostIp' },
+            { title: "Client", dataIndex: "clientId" },
+            { title: "Group", dataIndex: "groupId" },
+            { title: "Host", dataIndex: "hostIp" },
             {
-              title: 'Topics',
-              dataIndex: 'topics',
+              title: "Topics",
+              dataIndex: "topics",
               render: (topics = [], row) => {
                 if (editingClientId === row.clientId) {
                   return (
@@ -73,20 +97,33 @@ const ConsumerPanel = ({
                       style={{ minWidth: 220 }}
                       value={editingTopics}
                       onChange={setEditingTopics}
-                      options={topicNames.map((name) => ({ label: name, value: name }))}
+                      options={topicNames.map((name) => ({
+                        label: name,
+                        value: name,
+                      }))}
                     />
                   );
                 }
-                return <Space wrap>{topics.map((topic) => <Tag key={topic}>{topic}</Tag>)}</Space>;
-              }
+                return (
+                  <Space wrap>
+                    {topics.map((topic) => (
+                      <Tag key={topic}>{topic}</Tag>
+                    ))}
+                  </Space>
+                );
+              },
             },
             {
-              title: 'Status',
-              dataIndex: 'status',
-              render: (status) => <Tag color={status === 'RUNNING' ? 'green' : 'default'}>{status}</Tag>
+              title: "Status",
+              dataIndex: "status",
+              render: (status) => (
+                <Tag color={status === "RUNNING" ? "green" : "default"}>
+                  {status}
+                </Tag>
+              ),
             },
             {
-              title: 'Action',
+              title: "Action",
               render: (_, row) => {
                 if (editingClientId === row.clientId) {
                   return (
@@ -96,7 +133,7 @@ const ConsumerPanel = ({
                         size="small"
                         onClick={async () => {
                           await onUpdateTopics(row.clientId, editingTopics);
-                          setEditingClientId('');
+                          setEditingClientId("");
                           setEditingTopics([]);
                         }}
                       >
@@ -105,7 +142,7 @@ const ConsumerPanel = ({
                       <Button
                         size="small"
                         onClick={() => {
-                          setEditingClientId('');
+                          setEditingClientId("");
                           setEditingTopics([]);
                         }}
                       >
@@ -115,10 +152,17 @@ const ConsumerPanel = ({
                   );
                 }
 
-                const canOperateTopic = selectedTopic && (row.topics || []).includes(selectedTopic);
-                const runButton = row.status === 'RUNNING'
-                  ? <Button disabled={!ready} onClick={() => onStop(row.clientId)}>Stop</Button>
-                  : (
+                const canOperateTopic =
+                  selectedTopic && (row.topics || []).includes(selectedTopic);
+                const runButton =
+                  row.status === "RUNNING" ? (
+                    <Button
+                      disabled={!ready}
+                      onClick={() => onStop(row.clientId)}
+                    >
+                      Stop
+                    </Button>
+                  ) : (
                     <Button
                       type="primary"
                       disabled={!ready || !canOperateTopic}
@@ -128,7 +172,7 @@ const ConsumerPanel = ({
                     </Button>
                   );
 
-                if (row.status === 'RUNNING') {
+                if (row.status === "RUNNING") {
                   return (
                     <Space>
                       {runButton}
@@ -145,7 +189,9 @@ const ConsumerPanel = ({
                         title={`Delete consumer ${row.clientId}?`}
                         onConfirm={() => onDelete(row.clientId)}
                       >
-                        <Button size="small" danger>Delete</Button>
+                        <Button size="small" danger>
+                          Delete
+                        </Button>
                       </Popconfirm>
                     </Space>
                   );
@@ -166,12 +212,14 @@ const ConsumerPanel = ({
                       title={`Delete consumer ${row.clientId}?`}
                       onConfirm={() => onDelete(row.clientId)}
                     >
-                      <Button size="small" danger>Delete</Button>
+                      <Button size="small" danger>
+                        Delete
+                      </Button>
                     </Popconfirm>
                   </Space>
                 );
-              }
-            }
+              },
+            },
           ]}
         />
       </Space>

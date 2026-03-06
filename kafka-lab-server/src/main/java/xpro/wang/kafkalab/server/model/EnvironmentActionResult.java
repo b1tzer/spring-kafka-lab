@@ -9,9 +9,4 @@ package xpro.wang.kafkalab.server.model;
  * @param output action command output
  */
 public record EnvironmentActionResult(
-        String instanceId,
-        String action,
-        boolean success,
-        String output
-) {
-}
+    String instanceId, String action, boolean success, String output) {}

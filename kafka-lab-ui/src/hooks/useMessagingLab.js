@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { message } from 'antd';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { message } from "antd";
 import {
   createTopic,
   deleteManagedConsumer,
@@ -16,11 +16,11 @@ import {
   startManagedConsumer,
   stopManagedConsumer,
   updateManagedConsumerTopics,
-  updateProducerTopics
-} from '../api/kafkaLabApi';
-import useLabRealtime from './useLabRealtime';
-import { LAB_REALTIME_EVENT_TYPE } from '../constants/labDomain';
-import { showApiError } from '../utils/errorFeedback';
+  updateProducerTopics,
+} from "../api/kafkaLabApi";
+import useLabRealtime from "./useLabRealtime";
+import { LAB_REALTIME_EVENT_TYPE } from "../constants/labDomain";
+import { showApiError } from "../utils/errorFeedback";
 
 const MAX_LOGS = 120;
 
@@ -28,11 +28,11 @@ const normalizeLogEntry = (entry = {}) => ({
   id: entry.id || `${Date.now()}-${Math.random()}`,
   timestamp: entry.timestamp || Date.now(),
   time: entry.time || new Date().toLocaleTimeString(),
-  level: entry.level || 'info',
-  action: entry.action || 'EVENT',
-  detail: entry.detail || '',
-  topic: entry.topic || '',
-  fields: entry.fields || {}
+  level: entry.level || "info",
+  action: entry.action || "EVENT",
+  detail: entry.detail || "",
+  topic: entry.topic || "",
+  fields: entry.fields || {},
 });
 
 const useMessagingLab = ({ ready, nextName }) => {
@@ -44,16 +44,28 @@ const useMessagingLab = ({ ready, nextName }) => {
   const [loadingConsumers, setLoadingConsumers] = useState(false);
   const [activityLogs, setActivityLogs] = useState([]);
 
-  const topicNameSet = useMemo(() => new Set(topics.map((item) => item.name)), [topics]);
-  const producerIdSet = useMemo(() => new Set(producers.map((item) => item.producerId)), [producers]);
-  const consumerIdSet = useMemo(() => new Set(consumers.map((item) => item.clientId)), [consumers]);
-  const consumerGroupSet = useMemo(() => new Set(consumers.map((item) => item.groupId)), [consumers]);
+  const topicNameSet = useMemo(
+    () => new Set(topics.map((item) => item.name)),
+    [topics],
+  );
+  const producerIdSet = useMemo(
+    () => new Set(producers.map((item) => item.producerId)),
+    [producers],
+  );
+  const consumerIdSet = useMemo(
+    () => new Set(consumers.map((item) => item.clientId)),
+    [consumers],
+  );
+  const consumerGroupSet = useMemo(
+    () => new Set(consumers.map((item) => item.groupId)),
+    [consumers],
+  );
 
   const ensureReady = useCallback(() => {
     if (ready) {
       return true;
     }
-    message.warning('请先在 Environments 页面创建并启动环境');
+    message.warning("请先在 Environments 页面创建并启动环境");
     return false;
   }, [ready]);
 
@@ -71,7 +83,9 @@ const useMessagingLab = ({ ready, nextName }) => {
     setLoadingProducers(true);
     try {
       const res = await fetchManagedProducers();
-      setProducers((res.data || []).map((item) => ({ ...item, key: item.producerId })));
+      setProducers(
+        (res.data || []).map((item) => ({ ...item, key: item.producerId })),
+      );
     } finally {
       setLoadingProducers(false);
     }
@@ -81,7 +95,9 @@ const useMessagingLab = ({ ready, nextName }) => {
     setLoadingConsumers(true);
     try {
       const res = await fetchManagedConsumers();
-      setConsumers((res.data || []).map((item) => ({ ...item, key: item.clientId })));
+      setConsumers(
+        (res.data || []).map((item) => ({ ...item, key: item.clientId })),
+      );
     } finally {
       setLoadingConsumers(false);
     }
@@ -116,8 +132,8 @@ const useMessagingLab = ({ ready, nextName }) => {
     }
 
     if (
-      event.type === LAB_REALTIME_EVENT_TYPE.CONSUMER_CHANGED
-      || event.type === LAB_REALTIME_EVENT_TYPE.ENVIRONMENT_CHANGED
+      event.type === LAB_REALTIME_EVENT_TYPE.CONSUMER_CHANGED ||
+      event.type === LAB_REALTIME_EVENT_TYPE.ENVIRONMENT_CHANGED
     ) {
       loadConsumers();
       return;
@@ -141,210 +157,261 @@ const useMessagingLab = ({ ready, nextName }) => {
     }
   });
 
-  const createTopicByValues = useCallback(async (values) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      const topicName = nextName('topic', values.topicName, topicNameSet);
-      await createTopic({
-        topicName,
-        partitionCount: values.partitionCount,
-        replicationFactor: values.replicationFactor,
-        configs: {}
-      });
-      message.success(`Topic created: ${topicName}`);
-      await loadTopics();
-    } catch (error) {
-      showApiError('Topic create failed', error);
-    }
-  }, [ensureReady, nextName, topicNameSet, loadTopics]);
+  const createTopicByValues = useCallback(
+    async (values) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        const topicName = nextName("topic", values.topicName, topicNameSet);
+        await createTopic({
+          topicName,
+          partitionCount: values.partitionCount,
+          replicationFactor: values.replicationFactor,
+          configs: {},
+        });
+        message.success(`Topic created: ${topicName}`);
+        await loadTopics();
+      } catch (error) {
+        showApiError("Topic create failed", error);
+      }
+    },
+    [ensureReady, nextName, topicNameSet, loadTopics],
+  );
 
-  const deleteTopicByName = useCallback(async (topicName) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      await deleteTopic(topicName);
-      message.success('Topic deleted');
-      await loadTopics();
-    } catch (error) {
-      showApiError('Topic delete failed', error);
-    }
-  }, [ensureReady, loadTopics]);
+  const deleteTopicByName = useCallback(
+    async (topicName) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        await deleteTopic(topicName);
+        message.success("Topic deleted");
+        await loadTopics();
+      } catch (error) {
+        showApiError("Topic delete failed", error);
+      }
+    },
+    [ensureReady, loadTopics],
+  );
 
-  const createProducerByValues = useCallback(async (values) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      const producerId = nextName('producer', values.producerId, producerIdSet);
-      await registerProducer({ producerId, topics: values.topics });
-      message.success(`Producer added: ${producerId}`);
-      await loadProducers();
-    } catch (error) {
-      showApiError('Producer create failed', error);
-    }
-  }, [ensureReady, nextName, producerIdSet, loadProducers]);
+  const createProducerByValues = useCallback(
+    async (values) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        const producerId = nextName(
+          "producer",
+          values.producerId,
+          producerIdSet,
+        );
+        await registerProducer({ producerId, topics: values.topics });
+        message.success(`Producer added: ${producerId}`);
+        await loadProducers();
+      } catch (error) {
+        showApiError("Producer create failed", error);
+      }
+    },
+    [ensureReady, nextName, producerIdSet, loadProducers],
+  );
 
-  const startProducerAutoByValues = useCallback(async (values) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      await startProducerAutoSend(values.producerId, {
-        topic: values.topic,
-        frequencyPerSecond: values.frequencyPerSecond
-      });
-      message.success(`Auto send started: ${values.producerId}`);
-      await loadProducers();
-    } catch (error) {
-      showApiError('Start auto send failed', error);
-    }
-  }, [ensureReady, loadProducers]);
+  const startProducerAutoByValues = useCallback(
+    async (values) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        await startProducerAutoSend(values.producerId, {
+          topic: values.topic,
+          frequencyPerSecond: values.frequencyPerSecond,
+        });
+        message.success(`Auto send started: ${values.producerId}`);
+        await loadProducers();
+      } catch (error) {
+        showApiError("Start auto send failed", error);
+      }
+    },
+    [ensureReady, loadProducers],
+  );
 
-  const stopProducerAutoById = useCallback(async (producerId) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      await stopProducerAutoSend(producerId);
-      message.success(`Auto send stopped: ${producerId}`);
-      await loadProducers();
-    } catch (error) {
-      showApiError('Stop auto send failed', error);
-    }
-  }, [ensureReady, loadProducers]);
+  const stopProducerAutoById = useCallback(
+    async (producerId) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        await stopProducerAutoSend(producerId);
+        message.success(`Auto send stopped: ${producerId}`);
+        await loadProducers();
+      } catch (error) {
+        showApiError("Stop auto send failed", error);
+      }
+    },
+    [ensureReady, loadProducers],
+  );
 
-  const sendByProducerValues = useCallback(async (values, selectedTopic) => {
-    if (!ensureReady()) {
-      return;
-    }
-    if (!selectedTopic || !topicNameSet.has(selectedTopic)) {
-      message.warning('请先在 Topics 中点击选择一个 Topic');
-      return;
-    }
-    try {
-      const payload = values.message?.trim() || 'hello kafka lab';
-      await sendByProducer(values.producerId, {
-        topic: selectedTopic,
-        key: values.key,
-        message: payload,
-        partition: values.partition,
-        delay: values.delay,
-        count: values.count,
-        transactional: values.transactional || false
-      });
-      message.success(`Message sent by ${values.producerId}`);
-      await loadProducers();
-    } catch (error) {
-      showApiError('Message send failed', error);
-    }
-  }, [ensureReady, topicNameSet, loadProducers]);
+  const sendByProducerValues = useCallback(
+    async (values, selectedTopic) => {
+      if (!ensureReady()) {
+        return;
+      }
+      if (!selectedTopic || !topicNameSet.has(selectedTopic)) {
+        message.warning("请先在 Topics 中点击选择一个 Topic");
+        return;
+      }
+      try {
+        const payload = values.message?.trim() || "hello kafka lab";
+        await sendByProducer(values.producerId, {
+          topic: selectedTopic,
+          key: values.key,
+          message: payload,
+          partition: values.partition,
+          delay: values.delay,
+          count: values.count,
+          transactional: values.transactional || false,
+        });
+        message.success(`Message sent by ${values.producerId}`);
+        await loadProducers();
+      } catch (error) {
+        showApiError("Message send failed", error);
+      }
+    },
+    [ensureReady, topicNameSet, loadProducers],
+  );
 
-  const createConsumerByValues = useCallback(async (values) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      const groupId = nextName('consumerGroup', values.groupId, consumerGroupSet);
-      const clientId = nextName('consumer', values.clientId, consumerIdSet);
-      await registerConsumer({
-        groupId,
-        clientId,
-        hostIp: values.hostIp || '127.0.0.1',
-        topics: values.topics,
-        autoCommit: true
-      });
-      message.success(`Consumer added: ${clientId}`);
-      await loadConsumers();
-    } catch (error) {
-      showApiError('Consumer create failed', error);
-    }
-  }, [ensureReady, nextName, consumerGroupSet, consumerIdSet, loadConsumers]);
+  const createConsumerByValues = useCallback(
+    async (values) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        const groupId = nextName(
+          "consumerGroup",
+          values.groupId,
+          consumerGroupSet,
+        );
+        const clientId = nextName("consumer", values.clientId, consumerIdSet);
+        await registerConsumer({
+          groupId,
+          clientId,
+          hostIp: values.hostIp || "127.0.0.1",
+          topics: values.topics,
+          autoCommit: true,
+        });
+        message.success(`Consumer added: ${clientId}`);
+        await loadConsumers();
+      } catch (error) {
+        showApiError("Consumer create failed", error);
+      }
+    },
+    [ensureReady, nextName, consumerGroupSet, consumerIdSet, loadConsumers],
+  );
 
-  const startConsumerByClientId = useCallback(async (clientId, selectedTopic) => {
-    if (!ensureReady()) {
-      return;
-    }
-    const consumer = consumers.find((item) => item.clientId === clientId);
-    if (!selectedTopic || !consumer || !(consumer.topics || []).includes(selectedTopic)) {
-      message.warning('请选择该 Consumer 已订阅的 Topic 后再启动');
-      return;
-    }
-    try {
-      await startManagedConsumer(clientId);
-      message.success(`Consumer started: ${clientId}`);
-      await loadConsumers();
-    } catch (error) {
-      showApiError('Consumer start failed', error);
-    }
-  }, [ensureReady, consumers, loadConsumers]);
+  const startConsumerByClientId = useCallback(
+    async (clientId, selectedTopic) => {
+      if (!ensureReady()) {
+        return;
+      }
+      const consumer = consumers.find((item) => item.clientId === clientId);
+      if (
+        !selectedTopic ||
+        !consumer ||
+        !(consumer.topics || []).includes(selectedTopic)
+      ) {
+        message.warning("请选择该 Consumer 已订阅的 Topic 后再启动");
+        return;
+      }
+      try {
+        await startManagedConsumer(clientId);
+        message.success(`Consumer started: ${clientId}`);
+        await loadConsumers();
+      } catch (error) {
+        showApiError("Consumer start failed", error);
+      }
+    },
+    [ensureReady, consumers, loadConsumers],
+  );
 
-  const stopConsumerByClientId = useCallback(async (clientId) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      await stopManagedConsumer(clientId);
-      message.success(`Consumer stopped: ${clientId}`);
-      await loadConsumers();
-    } catch (error) {
-      showApiError('Consumer stop failed', error);
-    }
-  }, [ensureReady, loadConsumers]);
+  const stopConsumerByClientId = useCallback(
+    async (clientId) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        await stopManagedConsumer(clientId);
+        message.success(`Consumer stopped: ${clientId}`);
+        await loadConsumers();
+      } catch (error) {
+        showApiError("Consumer stop failed", error);
+      }
+    },
+    [ensureReady, loadConsumers],
+  );
 
-  const updateProducerTopicsById = useCallback(async (producerId, topics) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      await updateProducerTopics(producerId, topics);
-      message.success(`Producer updated: ${producerId}`);
-      await loadProducers();
-    } catch (error) {
-      showApiError('Producer update failed', error);
-    }
-  }, [ensureReady, loadProducers]);
+  const updateProducerTopicsById = useCallback(
+    async (producerId, topics) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        await updateProducerTopics(producerId, topics);
+        message.success(`Producer updated: ${producerId}`);
+        await loadProducers();
+      } catch (error) {
+        showApiError("Producer update failed", error);
+      }
+    },
+    [ensureReady, loadProducers],
+  );
 
-  const deleteProducerById = useCallback(async (producerId) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      await deleteManagedProducer(producerId);
-      message.success(`Producer deleted: ${producerId}`);
-      await loadProducers();
-    } catch (error) {
-      showApiError('Producer delete failed', error);
-    }
-  }, [ensureReady, loadProducers]);
+  const deleteProducerById = useCallback(
+    async (producerId) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        await deleteManagedProducer(producerId);
+        message.success(`Producer deleted: ${producerId}`);
+        await loadProducers();
+      } catch (error) {
+        showApiError("Producer delete failed", error);
+      }
+    },
+    [ensureReady, loadProducers],
+  );
 
-  const updateConsumerTopicsById = useCallback(async (clientId, topics) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      await updateManagedConsumerTopics(clientId, topics);
-      message.success(`Consumer updated: ${clientId}`);
-      await loadConsumers();
-    } catch (error) {
-      showApiError('Consumer update failed', error);
-    }
-  }, [ensureReady, loadConsumers]);
+  const updateConsumerTopicsById = useCallback(
+    async (clientId, topics) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        await updateManagedConsumerTopics(clientId, topics);
+        message.success(`Consumer updated: ${clientId}`);
+        await loadConsumers();
+      } catch (error) {
+        showApiError("Consumer update failed", error);
+      }
+    },
+    [ensureReady, loadConsumers],
+  );
 
-  const deleteConsumerById = useCallback(async (clientId) => {
-    if (!ensureReady()) {
-      return;
-    }
-    try {
-      await deleteManagedConsumer(clientId);
-      message.success(`Consumer deleted: ${clientId}`);
-      await loadConsumers();
-    } catch (error) {
-      showApiError('Consumer delete failed', error);
-    }
-  }, [ensureReady, loadConsumers]);
+  const deleteConsumerById = useCallback(
+    async (clientId) => {
+      if (!ensureReady()) {
+        return;
+      }
+      try {
+        await deleteManagedConsumer(clientId);
+        message.success(`Consumer deleted: ${clientId}`);
+        await loadConsumers();
+      } catch (error) {
+        showApiError("Consumer delete failed", error);
+      }
+    },
+    [ensureReady, loadConsumers],
+  );
 
   return {
     topics,
@@ -366,7 +433,7 @@ const useMessagingLab = ({ ready, nextName }) => {
     updateProducerTopicsById,
     deleteProducerById,
     updateConsumerTopicsById,
-    deleteConsumerById
+    deleteConsumerById,
   };
 };
 

@@ -1,30 +1,30 @@
-import React, { useMemo, useState } from 'react';
-import { Layout, Menu, Typography, Button } from 'antd';
-import { LinkOutlined } from '@ant-design/icons';
-import DashboardPage from './pages/DashboardPage';
-import MessagingPage from './pages/MessagingPage';
-import ScenariosPage from './pages/ScenariosPage';
-import ClusterPage from './pages/ClusterPage';
-import TopologyStudioPage from './pages/TopologyStudioPage';
-import LogsPage from './pages/LogsPage';
-import EnvironmentPage from './pages/EnvironmentPage';
-import useRunningEnvironment from './hooks/useRunningEnvironment';
+import React, { useMemo, useState } from "react";
+import { Layout, Menu, Typography, Button } from "antd";
+import { LinkOutlined } from "@ant-design/icons";
+import DashboardPage from "./pages/DashboardPage";
+import MessagingPage from "./pages/MessagingPage";
+import ScenariosPage from "./pages/ScenariosPage";
+import ClusterPage from "./pages/ClusterPage";
+import TopologyStudioPage from "./pages/TopologyStudioPage";
+import LogsPage from "./pages/LogsPage";
+import EnvironmentPage from "./pages/EnvironmentPage";
+import useRunningEnvironment from "./hooks/useRunningEnvironment";
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 const menus = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'messaging', label: 'Messaging Console' },
-  { key: 'scenarios', label: 'Scenarios' },
-  { key: 'environments', label: 'Environments' },
-  { key: 'cluster', label: 'Cluster' },
-  { key: 'topology-studio', label: 'Topology Studio' },
-  { key: 'logs', label: 'Logs' }
+  { key: "dashboard", label: "Dashboard" },
+  { key: "messaging", label: "Messaging Console" },
+  { key: "scenarios", label: "Scenarios" },
+  { key: "environments", label: "Environments" },
+  { key: "cluster", label: "Cluster" },
+  { key: "topology-studio", label: "Topology Studio" },
+  { key: "logs", label: "Logs" },
 ];
 
 const App = () => {
-  const [active, setActive] = useState('dashboard');
+  const [active, setActive] = useState("dashboard");
   const { runningEnvironment } = useRunningEnvironment();
   const kafkaUiPort = runningEnvironment?.kafkaUiPort || 18085;
   const kafkaUiUrl = `http://localhost:${kafkaUiPort}`;
@@ -32,28 +32,30 @@ const App = () => {
 
   const body = useMemo(() => {
     switch (active) {
-      case 'messaging':
+      case "messaging":
         return <MessagingPage />;
-      case 'scenarios':
+      case "scenarios":
         return <ScenariosPage />;
-      case 'environments':
+      case "environments":
         return <EnvironmentPage />;
-      case 'cluster':
+      case "cluster":
         return <ClusterPage />;
-      case 'topology-studio':
+      case "topology-studio":
         return <TopologyStudioPage />;
-      case 'logs':
+      case "logs":
         return <LogsPage />;
-      case 'dashboard':
+      case "dashboard":
       default:
         return <DashboardPage />;
     }
   }, [active]);
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: "100vh" }}>
       <Sider>
-        <div style={{ color: '#fff', padding: 16, fontWeight: 600 }}>Kafka Lab</div>
+        <div style={{ color: "#fff", padding: 16, fontWeight: 600 }}>
+          Kafka Lab
+        </div>
         <Menu
           theme="dark"
           mode="inline"
@@ -63,8 +65,17 @@ const App = () => {
         />
       </Sider>
       <Layout>
-        <Header style={{ background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Title level={4} style={{ margin: 0 }}>Kafka Playground for Backend Engineers</Title>
+        <Header
+          style={{
+            background: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Title level={4} style={{ margin: 0 }}>
+            Kafka Playground for Backend Engineers
+          </Title>
           <Button
             type="primary"
             icon={<LinkOutlined />}

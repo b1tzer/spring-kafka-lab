@@ -16,3 +16,6 @@ kafka-lab-ui/dist/
 
 # OS
 .DS_Store
+
+# Local scripts runtime artifacts
+*.log

@@ -2,7 +2,6 @@ package xpro.wang.kafkalab.server.model;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
-
 import java.util.List;
 
 /**
@@ -15,10 +14,8 @@ import java.util.List;
  * @param autoCommit whether auto commit enabled
  */
 public record ConsumerRegisterRequest(
-        String groupId,
-        String clientId,
-        String hostIp,
-        @NotEmpty @Size(min = 1) List<String> topics,
-        Boolean autoCommit
-) {
-}
+    String groupId,
+    String clientId,
+    String hostIp,
+    @NotEmpty @Size(min = 1) List<String> topics,
+    Boolean autoCommit) {}

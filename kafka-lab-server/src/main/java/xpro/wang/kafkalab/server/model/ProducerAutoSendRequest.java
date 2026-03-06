@@ -10,7 +10,4 @@ import jakarta.validation.constraints.NotBlank;
  * @param frequencyPerSecond send frequency (messages/second)
  */
 public record ProducerAutoSendRequest(
-        @NotBlank String topic,
-        @DecimalMin(value = "0.1") Double frequencyPerSecond
-) {
-}
+    @NotBlank String topic, @DecimalMin(value = "0.1") Double frequencyPerSecond) {}

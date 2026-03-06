@@ -19,17 +19,15 @@ import java.time.Instant;
  * @param updatedAt last update timestamp
  */
 public record EnvironmentInstance(
-        String id,
-        String name,
-        String projectName,
-        int brokerCount,
-        int replicationFactor,
-        String bootstrapServers,
-        boolean kafkaUiEnabled,
-        Integer kafkaUiPort,
-        String composeFilePath,
-        EnvironmentStatus status,
-        Instant createdAt,
-        Instant updatedAt
-) {
-}
+    String id,
+    String name,
+    String projectName,
+    int brokerCount,
+    int replicationFactor,
+    String bootstrapServers,
+    boolean kafkaUiEnabled,
+    Integer kafkaUiPort,
+    String composeFilePath,
+    EnvironmentStatus status,
+    Instant createdAt,
+    Instant updatedAt) {}

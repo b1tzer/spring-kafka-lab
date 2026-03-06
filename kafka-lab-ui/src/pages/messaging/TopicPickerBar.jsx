@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button, Card, Select, Space, Tag, Typography } from 'antd';
+import React from "react";
+import { Button, Card, Select, Space, Tag, Typography } from "antd";
 
 const QUICK_TOPIC_LIMIT = 5;
 
@@ -8,10 +8,14 @@ const TopicPickerBar = ({ topicNames, selectedTopic, onChange, disabled }) => {
 
   return (
     <Card size="small" variant="borderless">
-      <Space direction="vertical" style={{ width: '100%' }} size={8}>
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+      <Space direction="vertical" style={{ width: "100%" }} size={8}>
+        <Space wrap style={{ width: "100%", justifyContent: "space-between" }}>
           <Typography.Text strong>Active Topic</Typography.Text>
-          {selectedTopic ? <Tag color="blue">{selectedTopic}</Tag> : <Tag>未选择</Tag>}
+          {selectedTopic ? (
+            <Tag color="blue">{selectedTopic}</Tag>
+          ) : (
+            <Tag>未选择</Tag>
+          )}
         </Space>
 
         <Space wrap>
@@ -22,7 +26,7 @@ const TopicPickerBar = ({ topicNames, selectedTopic, onChange, disabled }) => {
             style={{ width: 220 }}
             value={selectedTopic || undefined}
             options={topicNames.map((name) => ({ value: name, label: name }))}
-            onChange={(value) => onChange(value || '')}
+            onChange={(value) => onChange(value || "")}
             disabled={disabled || topicNames.length === 0}
             optionFilterProp="label"
           />
@@ -31,7 +35,7 @@ const TopicPickerBar = ({ topicNames, selectedTopic, onChange, disabled }) => {
             <Button
               key={topicName}
               size="small"
-              type={selectedTopic === topicName ? 'primary' : 'default'}
+              type={selectedTopic === topicName ? "primary" : "default"}
               onClick={() => onChange(topicName)}
               disabled={disabled}
             >

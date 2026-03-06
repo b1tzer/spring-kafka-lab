@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+echo "[pre-commit] Running backend formatter (Spotless)..."
+mvn -q -f kafka-lab-server/pom.xml spotless:apply
+
+echo "[pre-commit] Running frontend formatter (Prettier)..."
+npm --prefix kafka-lab-ui run format
+
+echo "[pre-commit] Re-staging formatted files..."
+git add -A

@@ -15,12 +15,10 @@ import jakarta.validation.constraints.NotBlank;
  * @param transactional whether to use transactional sending
  */
 public record ProducerSendRequest(
-        @NotBlank String topic,
-        String key,
-        @NotBlank String message,
-        Integer partition,
-        @Min(0) Long delay,
-        @Min(1) Integer count,
-        boolean transactional
-) {
-}
+    @NotBlank String topic,
+    String key,
+    @NotBlank String message,
+    Integer partition,
+    @Min(0) Long delay,
+    @Min(1) Integer count,
+    boolean transactional) {}

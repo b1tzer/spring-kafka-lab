@@ -18,10 +18,8 @@
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #1e2a45;
-  background:
-    radial-gradient(circle at 25% 20%, #1f2f56 0%, transparent 42%),
-    radial-gradient(circle at 75% 75%, #182844 0%, transparent 40%),
-    #060b16;
+  background: radial-gradient(circle at 25% 20%, #1f2f56 0%, transparent 42%),
+    radial-gradient(circle at 75% 75%, #182844 0%, transparent 40%), #060b16;
 }
 
 .topology-canvas-wrap .react-flow {
@@ -121,7 +119,7 @@
   box-shadow: 0 0 12px #3bbd7088;
 }
 
-.topo-partition.active[data-ripple='true'] {
+.topo-partition.active[data-ripple="true"] {
   animation: partitionRipple 0.2s ease-out;
 }
 
@@ -135,9 +133,19 @@
 }
 
 @keyframes consumerShake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  50% { transform: translateX(3px); }
-  75% { transform: translateX(-2px); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }

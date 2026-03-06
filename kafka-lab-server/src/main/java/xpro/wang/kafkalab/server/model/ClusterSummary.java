@@ -11,9 +11,4 @@ import java.util.List;
  * @param brokerCount broker count
  */
 public record ClusterSummary(
-        String clusterId,
-        String controller,
-        List<String> brokers,
-        int brokerCount
-) {
-}
+    String clusterId, String controller, List<String> brokers, int brokerCount) {}

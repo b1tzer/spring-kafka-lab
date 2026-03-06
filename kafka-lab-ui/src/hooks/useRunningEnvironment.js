@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
-import { listEnvironments } from '../api/kafkaLabApi';
-import useLabRealtime from './useLabRealtime';
-import { ENVIRONMENT_STATUS, LAB_REALTIME_EVENT_TYPE } from '../constants/labDomain';
+import { useCallback, useEffect, useState } from "react";
+import { listEnvironments } from "../api/kafkaLabApi";
+import useLabRealtime from "./useLabRealtime";
+import {
+  ENVIRONMENT_STATUS,
+  LAB_REALTIME_EVENT_TYPE,
+} from "../constants/labDomain";
 
 const useRunningEnvironment = () => {
   const [loading, setLoading] = useState(true);
@@ -12,7 +15,9 @@ const useRunningEnvironment = () => {
     setLoading(true);
     try {
       const res = await listEnvironments();
-      const running = (res.data || []).find((item) => item.status === ENVIRONMENT_STATUS.RUNNING);
+      const running = (res.data || []).find(
+        (item) => item.status === ENVIRONMENT_STATUS.RUNNING,
+      );
       setRunningEnvironment(running || null);
       setReady(Boolean(running));
     } catch (error) {

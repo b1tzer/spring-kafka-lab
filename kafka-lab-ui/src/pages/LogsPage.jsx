@@ -1,9 +1,9 @@
-import React from 'react';
-import { Alert, Space, Typography } from 'antd';
+import React from "react";
+import { Alert, Space, Typography } from "antd";
 
 const LogsPage = () => {
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space direction="vertical" style={{ width: "100%" }}>
       <Typography.Title level={3}>Logs</Typography.Title>
       <Alert
         type="info"

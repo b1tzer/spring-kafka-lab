@@ -2,17 +2,6 @@ package xpro.wang.kafkalab.server.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
-import xpro.wang.kafkalab.server.model.EnvironmentAction;
-import xpro.wang.kafkalab.server.model.EnvironmentActionResult;
-import xpro.wang.kafkalab.server.model.EnvironmentCreateRequest;
-import xpro.wang.kafkalab.server.model.EnvironmentInstance;
-import xpro.wang.kafkalab.server.model.EnvironmentStatus;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,438 +16,484 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+import xpro.wang.kafkalab.server.model.EnvironmentAction;
+import xpro.wang.kafkalab.server.model.EnvironmentActionResult;
+import xpro.wang.kafkalab.server.model.EnvironmentCreateRequest;
+import xpro.wang.kafkalab.server.model.EnvironmentInstance;
+import xpro.wang.kafkalab.server.model.EnvironmentStatus;
 
-/**
- * Environment lifecycle management service backed by Docker Compose.
- */
+/** Environment lifecycle management service backed by Docker Compose. */
 @Service
 public class EnvironmentManagerService {
 
-    private static final Logger log = LoggerFactory.getLogger(EnvironmentManagerService.class);
+  private static final Logger log = LoggerFactory.getLogger(EnvironmentManagerService.class);
 
-    private static final String COMPOSE_TEMPLATE_PATH = "templates/environment/docker-compose.template.yml";
-    private static final String BROKER_TEMPLATE_PATH = "templates/environment/broker-service.template.yml";
-    private static final String KAFKA_UI_TEMPLATE_PATH = "templates/environment/kafka-ui-service.template.yml";
+  private static final String COMPOSE_TEMPLATE_PATH =
+      "templates/environment/docker-compose.template.yml";
+  private static final String BROKER_TEMPLATE_PATH =
+      "templates/environment/broker-service.template.yml";
+  private static final String KAFKA_UI_TEMPLATE_PATH =
+      "templates/environment/kafka-ui-service.template.yml";
 
-    private final ObjectMapper objectMapper;
-    private final Path envRoot;
-    private final String clusterId;
-    private final int defaultKafkaUiPort;
-    private final String composeTemplate;
-    private final String brokerServiceTemplate;
-    private final String kafkaUiServiceTemplate;
-    private final DockerComposeCommandService dockerComposeCommandService;
-    private final EnvironmentResourceCleanupService environmentResourceCleanupService;
-    private final Map<String, EnvironmentInstance> instances = new ConcurrentHashMap<>();
+  private final ObjectMapper objectMapper;
+  private final Path envRoot;
+  private final String clusterId;
+  private final int defaultKafkaUiPort;
+  private final String composeTemplate;
+  private final String brokerServiceTemplate;
+  private final String kafkaUiServiceTemplate;
+  private final DockerComposeCommandService dockerComposeCommandService;
+  private final EnvironmentResourceCleanupService environmentResourceCleanupService;
+  private final Map<String, EnvironmentInstance> instances = new ConcurrentHashMap<>();
 
-    public EnvironmentManagerService(ObjectMapper objectMapper,
-            @Value("${kafka-lab.env.root:./runtime/environments}") String envRoot,
-            @Value("${kafka-lab.env.cluster-id:MkU3OEVBNTcwNTJENDM2Qk}") String clusterId,
-            @Value("${kafka-lab.env.default-kafka-ui-port:18085}") int defaultKafkaUiPort,
-            DockerComposeCommandService dockerComposeCommandService,
-            EnvironmentResourceCleanupService environmentResourceCleanupService) throws IOException {
-        this.objectMapper = objectMapper;
-        this.envRoot = Paths.get(envRoot).toAbsolutePath().normalize();
-        this.clusterId = clusterId;
-        this.defaultKafkaUiPort = defaultKafkaUiPort;
-        this.composeTemplate = loadClasspathTemplate(COMPOSE_TEMPLATE_PATH);
-        this.brokerServiceTemplate = loadClasspathTemplate(BROKER_TEMPLATE_PATH);
-        this.kafkaUiServiceTemplate = loadClasspathTemplate(KAFKA_UI_TEMPLATE_PATH);
-        this.dockerComposeCommandService = dockerComposeCommandService;
-        this.environmentResourceCleanupService = environmentResourceCleanupService;
-        Files.createDirectories(this.envRoot);
-        loadPersistedInstances();
-        log.info("EnvironmentManager initialized. envRoot={}, persistedInstances={}", this.envRoot, instances.size());
+  public EnvironmentManagerService(
+      ObjectMapper objectMapper,
+      @Value("${kafka-lab.env.root:./runtime/environments}") String envRoot,
+      @Value("${kafka-lab.env.cluster-id:MkU3OEVBNTcwNTJENDM2Qk}") String clusterId,
+      @Value("${kafka-lab.env.default-kafka-ui-port:18085}") int defaultKafkaUiPort,
+      DockerComposeCommandService dockerComposeCommandService,
+      EnvironmentResourceCleanupService environmentResourceCleanupService)
+      throws IOException {
+    this.objectMapper = objectMapper;
+    this.envRoot = Paths.get(envRoot).toAbsolutePath().normalize();
+    this.clusterId = clusterId;
+    this.defaultKafkaUiPort = defaultKafkaUiPort;
+    this.composeTemplate = loadClasspathTemplate(COMPOSE_TEMPLATE_PATH);
+    this.brokerServiceTemplate = loadClasspathTemplate(BROKER_TEMPLATE_PATH);
+    this.kafkaUiServiceTemplate = loadClasspathTemplate(KAFKA_UI_TEMPLATE_PATH);
+    this.dockerComposeCommandService = dockerComposeCommandService;
+    this.environmentResourceCleanupService = environmentResourceCleanupService;
+    Files.createDirectories(this.envRoot);
+    loadPersistedInstances();
+    log.info(
+        "EnvironmentManager initialized. envRoot={}, persistedInstances={}",
+        this.envRoot,
+        instances.size());
+  }
+
+  public List<EnvironmentInstance> list() {
+    return instances.values().stream()
+        .sorted(Comparator.comparing(EnvironmentInstance::createdAt).reversed())
+        .toList();
+  }
+
+  /**
+   * Returns environment instance by id.
+   *
+   * @param id instance id
+   * @return environment instance
+   */
+  public EnvironmentInstance get(String id) {
+    EnvironmentInstance instance = instances.get(id);
+    if (instance == null) {
+      throw new IllegalArgumentException("Environment not found: " + id);
+    }
+    return instance;
+  }
+
+  /**
+   * Returns latest running environment instance.
+   *
+   * @return running environment instance
+   */
+  public EnvironmentInstance getRunningEnvironment() {
+    return instances.values().stream()
+        .filter(instance -> instance.status() == EnvironmentStatus.RUNNING)
+        .max(Comparator.comparing(EnvironmentInstance::updatedAt))
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "No running Kafka environment. Please create and start an environment in Environments page first."));
+  }
+
+  /**
+   * Creates a new environment definition and compose file.
+   *
+   * @param request create request
+   * @return created environment instance
+   * @throws IOException when persistence fails
+   */
+  public synchronized EnvironmentInstance create(EnvironmentCreateRequest request)
+      throws IOException {
+    validateRequest(request);
+
+    log.info(
+        "Creating environment: name={}, brokers={}, replicationFactor={}, externalPortBase={}, kafkaUiEnabled={}, kafkaUiPort={}",
+        request.name(),
+        request.brokerCount(),
+        request.replicationFactor(),
+        request.externalPortBase(),
+        isKafkaUiEnabled(request),
+        resolveKafkaUiPort(request));
+
+    String id = UUID.randomUUID().toString().substring(0, 8);
+    String projectName = "kafkalab-" + sanitize(request.name()) + "-" + id;
+    Path instanceDir = envRoot.resolve(projectName);
+    Files.createDirectories(instanceDir);
+
+    Path composeFile = instanceDir.resolve("docker-compose.yml");
+    String compose = renderCompose(request, projectName);
+    Files.writeString(composeFile, compose, StandardCharsets.UTF_8);
+
+    EnvironmentInstance instance =
+        new EnvironmentInstance(
+            id,
+            request.name(),
+            projectName,
+            request.brokerCount(),
+            request.replicationFactor(),
+            externalBootstrapServers(request.externalPortBase(), request.brokerCount()),
+            isKafkaUiEnabled(request),
+            isKafkaUiEnabled(request) ? resolveKafkaUiPort(request) : null,
+            composeFile.toString(),
+            EnvironmentStatus.CREATED,
+            Instant.now(),
+            Instant.now());
+
+    instances.put(id, instance);
+    persist(instance);
+    log.info(
+        "Environment created: id={}, projectName={}, composeFile={}", id, projectName, composeFile);
+    return instance;
+  }
+
+  /**
+   * Starts an environment instance.
+   *
+   * @param id instance id
+   * @return action result
+   * @throws Exception when command execution fails
+   */
+  public synchronized EnvironmentActionResult start(String id) throws Exception {
+    EnvironmentInstance instance = get(id);
+    log.info("Starting environment: id={}, projectName={}", id, instance.projectName());
+    DockerComposeCommandService.CommandResult result = runCompose(instance, List.of("up", "-d"));
+    updateStatus(id, result.success() ? EnvironmentStatus.RUNNING : EnvironmentStatus.START_FAILED);
+    if (result.success()) {
+      log.info("Environment started: id={}", id);
+    } else {
+      log.error("Environment start failed: id={}, output={}", id, result.output());
+    }
+    return new EnvironmentActionResult(
+        id, EnvironmentAction.START.value(), result.success(), result.output());
+  }
+
+  /**
+   * Stops an environment instance.
+   *
+   * @param id instance id
+   * @return action result
+   * @throws Exception when command execution fails
+   */
+  public synchronized EnvironmentActionResult stop(String id) throws Exception {
+    EnvironmentInstance instance = get(id);
+    log.info("Stopping environment: id={}, projectName={}", id, instance.projectName());
+    DockerComposeCommandService.CommandResult result = runCompose(instance, List.of("stop"));
+    updateStatus(id, result.success() ? EnvironmentStatus.STOPPED : EnvironmentStatus.STOP_FAILED);
+    if (result.success()) {
+      log.info("Environment stopped: id={}", id);
+    } else {
+      log.error("Environment stop failed: id={}, output={}", id, result.output());
+    }
+    return new EnvironmentActionResult(
+        id, EnvironmentAction.STOP.value(), result.success(), result.output());
+  }
+
+  /**
+   * Deletes an environment instance and associated files.
+   *
+   * @param id instance id
+   * @return action result
+   * @throws Exception when command execution fails
+   */
+  public synchronized EnvironmentActionResult delete(String id) throws Exception {
+    EnvironmentInstance instance = get(id);
+    log.info("Deleting environment: id={}, projectName={}", id, instance.projectName());
+    EnvironmentResourceCleanupService.CleanupResult result =
+        environmentResourceCleanupService.cleanup(instance, true);
+    if (result.success()) {
+      instances.remove(id);
+      log.info("Environment deleted: id={}", id);
+    } else {
+      log.error("Environment delete failed: id={}, output={}", id, result.output());
+    }
+    return new EnvironmentActionResult(
+        id, EnvironmentAction.DELETE.value(), result.success(), result.output());
+  }
+
+  /**
+   * Queries runtime status for an environment instance.
+   *
+   * @param id instance id
+   * @return action result
+   * @throws Exception when command execution fails
+   */
+  public synchronized EnvironmentActionResult status(String id) throws Exception {
+    EnvironmentInstance instance = get(id);
+    log.info("Checking environment status: id={}, projectName={}", id, instance.projectName());
+    DockerComposeCommandService.CommandResult result = runCompose(instance, List.of("ps"));
+    if (result.success() && result.output().toLowerCase(Locale.ROOT).contains("up")) {
+      updateStatus(id, EnvironmentStatus.RUNNING);
+    }
+    if (!result.success()) {
+      log.error("Environment status check failed: id={}, output={}", id, result.output());
+    }
+    return new EnvironmentActionResult(
+        id, EnvironmentAction.STATUS.value(), result.success(), result.output());
+  }
+
+  /**
+   * Retrieves environment logs.
+   *
+   * @param id instance id
+   * @param tail number of lines
+   * @return action result
+   * @throws Exception when command execution fails
+   */
+  public EnvironmentActionResult logs(String id, int tail) throws Exception {
+    EnvironmentInstance instance = get(id);
+    log.info("Fetching environment logs: id={}, tail={}", id, tail);
+    DockerComposeCommandService.CommandResult result =
+        runCompose(instance, List.of("logs", "--tail", String.valueOf(tail)));
+    if (!result.success()) {
+      log.error("Environment logs fetch failed: id={}, output={}", id, result.output());
+    }
+    return new EnvironmentActionResult(
+        id, EnvironmentAction.LOGS.value(), result.success(), result.output());
+  }
+
+  @PreDestroy
+  public synchronized void destroyAllGeneratedDockerResourcesOnShutdown() {
+    if (instances.isEmpty()) {
+      return;
     }
 
-    public List<EnvironmentInstance> list() {
-        return instances.values().stream()
-                .sorted(Comparator.comparing(EnvironmentInstance::createdAt).reversed())
-                .toList();
-    }
-
-    /**
-     * Returns environment instance by id.
-     *
-     * @param id instance id
-     * @return environment instance
-     */
-    public EnvironmentInstance get(String id) {
-        EnvironmentInstance instance = instances.get(id);
-        if (instance == null) {
-            throw new IllegalArgumentException("Environment not found: " + id);
-        }
-        return instance;
-    }
-
-    /**
-     * Returns latest running environment instance.
-     *
-     * @return running environment instance
-     */
-    public EnvironmentInstance getRunningEnvironment() {
-        return instances.values().stream()
-            .filter(instance -> instance.status() == EnvironmentStatus.RUNNING)
-                .max(Comparator.comparing(EnvironmentInstance::updatedAt))
-                .orElseThrow(() -> new IllegalStateException(
-                        "No running Kafka environment. Please create and start an environment in Environments page first."));
-    }
-
-    /**
-     * Creates a new environment definition and compose file.
-     *
-     * @param request create request
-     * @return created environment instance
-     * @throws IOException when persistence fails
-     */
-    public synchronized EnvironmentInstance create(EnvironmentCreateRequest request) throws IOException {
-        validateRequest(request);
-
-        log.info("Creating environment: name={}, brokers={}, replicationFactor={}, externalPortBase={}, kafkaUiEnabled={}, kafkaUiPort={}",
-            request.name(), request.brokerCount(), request.replicationFactor(), request.externalPortBase(),
-            isKafkaUiEnabled(request), resolveKafkaUiPort(request));
-
-        String id = UUID.randomUUID().toString().substring(0, 8);
-        String projectName = "kafkalab-" + sanitize(request.name()) + "-" + id;
-        Path instanceDir = envRoot.resolve(projectName);
-        Files.createDirectories(instanceDir);
-
-        Path composeFile = instanceDir.resolve("docker-compose.yml");
-        String compose = renderCompose(request, projectName);
-        Files.writeString(composeFile, compose, StandardCharsets.UTF_8);
-
-        EnvironmentInstance instance = new EnvironmentInstance(
-                id,
-                request.name(),
-                projectName,
-                request.brokerCount(),
-                request.replicationFactor(),
-                externalBootstrapServers(request.externalPortBase(), request.brokerCount()),
-                isKafkaUiEnabled(request),
-                isKafkaUiEnabled(request) ? resolveKafkaUiPort(request) : null,
-                composeFile.toString(),
-                EnvironmentStatus.CREATED,
-                Instant.now(),
-                Instant.now());
-
-        instances.put(id, instance);
-        persist(instance);
-        log.info("Environment created: id={}, projectName={}, composeFile={}", id, projectName, composeFile);
-        return instance;
-    }
-
-    /**
-     * Starts an environment instance.
-     *
-     * @param id instance id
-     * @return action result
-     * @throws Exception when command execution fails
-     */
-    public synchronized EnvironmentActionResult start(String id) throws Exception {
-        EnvironmentInstance instance = get(id);
-        log.info("Starting environment: id={}, projectName={}", id, instance.projectName());
-        DockerComposeCommandService.CommandResult result = runCompose(instance, List.of("up", "-d"));
-        updateStatus(id, result.success() ? EnvironmentStatus.RUNNING : EnvironmentStatus.START_FAILED);
-        if (result.success()) {
-            log.info("Environment started: id={}", id);
-        } else {
-            log.error("Environment start failed: id={}, output={}", id, result.output());
-        }
-        return new EnvironmentActionResult(id, EnvironmentAction.START.value(), result.success(), result.output());
-    }
-
-    /**
-     * Stops an environment instance.
-     *
-     * @param id instance id
-     * @return action result
-     * @throws Exception when command execution fails
-     */
-    public synchronized EnvironmentActionResult stop(String id) throws Exception {
-        EnvironmentInstance instance = get(id);
-        log.info("Stopping environment: id={}, projectName={}", id, instance.projectName());
-        DockerComposeCommandService.CommandResult result = runCompose(instance, List.of("stop"));
-        updateStatus(id, result.success() ? EnvironmentStatus.STOPPED : EnvironmentStatus.STOP_FAILED);
-        if (result.success()) {
-            log.info("Environment stopped: id={}", id);
-        } else {
-            log.error("Environment stop failed: id={}, output={}", id, result.output());
-        }
-        return new EnvironmentActionResult(id, EnvironmentAction.STOP.value(), result.success(), result.output());
-    }
-
-    /**
-     * Deletes an environment instance and associated files.
-     *
-     * @param id instance id
-     * @return action result
-     * @throws Exception when command execution fails
-     */
-    public synchronized EnvironmentActionResult delete(String id) throws Exception {
-        EnvironmentInstance instance = get(id);
-        log.info("Deleting environment: id={}, projectName={}", id, instance.projectName());
-        EnvironmentResourceCleanupService.CleanupResult result = environmentResourceCleanupService.cleanup(instance,
-                true);
-        if (result.success()) {
-            instances.remove(id);
-            log.info("Environment deleted: id={}", id);
-        } else {
-            log.error("Environment delete failed: id={}, output={}", id, result.output());
-        }
-        return new EnvironmentActionResult(id, EnvironmentAction.DELETE.value(), result.success(), result.output());
-    }
-
-    /**
-     * Queries runtime status for an environment instance.
-     *
-     * @param id instance id
-     * @return action result
-     * @throws Exception when command execution fails
-     */
-    public synchronized EnvironmentActionResult status(String id) throws Exception {
-        EnvironmentInstance instance = get(id);
-        log.info("Checking environment status: id={}, projectName={}", id, instance.projectName());
-        DockerComposeCommandService.CommandResult result = runCompose(instance, List.of("ps"));
-        if (result.success() && result.output().toLowerCase(Locale.ROOT).contains("up")) {
-            updateStatus(id, EnvironmentStatus.RUNNING);
-        }
+    List<EnvironmentInstance> snapshot = new ArrayList<>(instances.values());
+    for (EnvironmentInstance instance : snapshot) {
+      try {
+        EnvironmentResourceCleanupService.CleanupResult result =
+            environmentResourceCleanupService.cleanup(instance, true);
         if (!result.success()) {
-            log.error("Environment status check failed: id={}, output={}", id, result.output());
+          log.warn(
+              "Failed to cleanup docker resources for environment {}: {}",
+              instance.id(),
+              result.output());
+          continue;
         }
-        return new EnvironmentActionResult(id, EnvironmentAction.STATUS.value(), result.success(), result.output());
+      } catch (Exception ex) {
+        log.warn(
+            "Error while cleaning environment {} on shutdown: {}", instance.id(), ex.getMessage());
+      }
     }
 
-    /**
-     * Retrieves environment logs.
-     *
-     * @param id   instance id
-     * @param tail number of lines
-     * @return action result
-     * @throws Exception when command execution fails
-     */
-    public EnvironmentActionResult logs(String id, int tail) throws Exception {
-        EnvironmentInstance instance = get(id);
-        log.info("Fetching environment logs: id={}, tail={}", id, tail);
-        DockerComposeCommandService.CommandResult result = runCompose(instance,
-                List.of("logs", "--tail", String.valueOf(tail)));
-        if (!result.success()) {
-            log.error("Environment logs fetch failed: id={}, output={}", id, result.output());
-        }
-        return new EnvironmentActionResult(id, EnvironmentAction.LOGS.value(), result.success(), result.output());
+    instances.clear();
+    log.info("Shutdown cleanup completed for {} generated Kafka environments", snapshot.size());
+  }
+
+  private void validateRequest(EnvironmentCreateRequest request) {
+    boolean kafkaUiEnabled = isKafkaUiEnabled(request);
+    int kafkaUiPort = resolveKafkaUiPort(request);
+    if (request.replicationFactor() > request.brokerCount()) {
+      throw new IllegalArgumentException("replicationFactor must be <= brokerCount");
     }
-
-    @PreDestroy
-    public synchronized void destroyAllGeneratedDockerResourcesOnShutdown() {
-        if (instances.isEmpty()) {
-            return;
-        }
-
-        List<EnvironmentInstance> snapshot = new ArrayList<>(instances.values());
-        for (EnvironmentInstance instance : snapshot) {
-            try {
-                EnvironmentResourceCleanupService.CleanupResult result = environmentResourceCleanupService
-                        .cleanup(instance, true);
-                if (!result.success()) {
-                    log.warn("Failed to cleanup docker resources for environment {}: {}", instance.id(),
-                            result.output());
-                    continue;
-                }
-            } catch (Exception ex) {
-                log.warn("Error while cleaning environment {} on shutdown: {}", instance.id(), ex.getMessage());
-            }
-        }
-
-        instances.clear();
-        log.info("Shutdown cleanup completed for {} generated Kafka environments", snapshot.size());
+    if (request.externalPortBase() + request.brokerCount() - 1 > 65535) {
+      throw new IllegalArgumentException("externalPortBase + brokerCount - 1 must be <= 65535");
     }
-
-    private void validateRequest(EnvironmentCreateRequest request) {
-        boolean kafkaUiEnabled = isKafkaUiEnabled(request);
-        int kafkaUiPort = resolveKafkaUiPort(request);
-        if (request.replicationFactor() > request.brokerCount()) {
-            throw new IllegalArgumentException("replicationFactor must be <= brokerCount");
-        }
-        if (request.externalPortBase() + request.brokerCount() - 1 > 65535) {
-            throw new IllegalArgumentException("externalPortBase + brokerCount - 1 must be <= 65535");
-        }
-        if (kafkaUiEnabled) {
-            int first = request.externalPortBase();
-            int last = request.externalPortBase() + request.brokerCount() - 1;
-            if (kafkaUiPort >= first && kafkaUiPort <= last) {
-                throw new IllegalArgumentException("kafkaUiPort conflicts with broker external port range");
-            }
-        }
+    if (kafkaUiEnabled) {
+      int first = request.externalPortBase();
+      int last = request.externalPortBase() + request.brokerCount() - 1;
+      if (kafkaUiPort >= first && kafkaUiPort <= last) {
+        throw new IllegalArgumentException("kafkaUiPort conflicts with broker external port range");
+      }
     }
+  }
 
-    private void updateStatus(String id, EnvironmentStatus status) throws IOException {
-        EnvironmentInstance old = get(id);
-        EnvironmentInstance updated = new EnvironmentInstance(
-                old.id(),
-                old.name(),
-                old.projectName(),
-                old.brokerCount(),
-                old.replicationFactor(),
-                old.bootstrapServers(),
-                old.kafkaUiEnabled(),
-                old.kafkaUiPort(),
-                old.composeFilePath(),
-                status,
-                old.createdAt(),
-                Instant.now());
-        instances.put(id, updated);
-        persist(updated);
-        log.info("Environment status updated: id={}, from={}, to={}", id, old.status(), status);
+  private void updateStatus(String id, EnvironmentStatus status) throws IOException {
+    EnvironmentInstance old = get(id);
+    EnvironmentInstance updated =
+        new EnvironmentInstance(
+            old.id(),
+            old.name(),
+            old.projectName(),
+            old.brokerCount(),
+            old.replicationFactor(),
+            old.bootstrapServers(),
+            old.kafkaUiEnabled(),
+            old.kafkaUiPort(),
+            old.composeFilePath(),
+            status,
+            old.createdAt(),
+            Instant.now());
+    instances.put(id, updated);
+    persist(updated);
+    log.info("Environment status updated: id={}, from={}, to={}", id, old.status(), status);
+  }
+
+  private void persist(EnvironmentInstance instance) throws IOException {
+    Path dir = Path.of(instance.composeFilePath()).getParent();
+    if (dir == null) {
+      return;
     }
+    Path meta = dir.resolve("meta.json");
+    Files.writeString(
+        meta,
+        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(instance),
+        StandardCharsets.UTF_8);
+  }
 
-    private void persist(EnvironmentInstance instance) throws IOException {
-        Path dir = Path.of(instance.composeFilePath()).getParent();
-        if (dir == null) {
-            return;
-        }
+  private void loadPersistedInstances() throws IOException {
+    if (!Files.exists(envRoot)) {
+      return;
+    }
+    try (var stream = Files.list(envRoot)) {
+      for (Path dir : stream.filter(Files::isDirectory).toList()) {
         Path meta = dir.resolve("meta.json");
-        Files.writeString(meta, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(instance),
-                StandardCharsets.UTF_8);
-    }
-
-    private void loadPersistedInstances() throws IOException {
-        if (!Files.exists(envRoot)) {
-            return;
+        if (!Files.exists(meta)) {
+          continue;
         }
-        try (var stream = Files.list(envRoot)) {
-            for (Path dir : stream.filter(Files::isDirectory).toList()) {
-                Path meta = dir.resolve("meta.json");
-                if (!Files.exists(meta)) {
-                    continue;
-                }
-                EnvironmentInstance instance = objectMapper.readValue(Files.readString(meta),
-                        EnvironmentInstance.class);
-                instances.put(instance.id(), instance);
-            }
-        }
-            log.info("Loaded persisted environments: count={}", instances.size());
+        EnvironmentInstance instance =
+            objectMapper.readValue(Files.readString(meta), EnvironmentInstance.class);
+        instances.put(instance.id(), instance);
+      }
     }
+    log.info("Loaded persisted environments: count={}", instances.size());
+  }
 
-    private DockerComposeCommandService.CommandResult runCompose(EnvironmentInstance instance,
-            List<String> actionArgs) {
-        Path composeFile = Path.of(instance.composeFilePath());
-        DockerComposeCommandService.CommandResult result = dockerComposeCommandService.runCompose(
-            composeFile,
-            instance.projectName(),
-            actionArgs);
-        if (!result.success()) {
-            log.error("Compose command failed. projectName={}, composeFile={}, actionArgs={}, output={}",
-                instance.projectName(), composeFile, actionArgs, result.output());
-        }
-        return result;
+  private DockerComposeCommandService.CommandResult runCompose(
+      EnvironmentInstance instance, List<String> actionArgs) {
+    Path composeFile = Path.of(instance.composeFilePath());
+    DockerComposeCommandService.CommandResult result =
+        dockerComposeCommandService.runCompose(composeFile, instance.projectName(), actionArgs);
+    if (!result.success()) {
+      log.error(
+          "Compose command failed. projectName={}, composeFile={}, actionArgs={}, output={}",
+          instance.projectName(),
+          composeFile,
+          actionArgs,
+          result.output());
     }
+    return result;
+  }
 
-    private String renderCompose(EnvironmentCreateRequest request, String projectName) {
-        boolean kafkaUiEnabled = isKafkaUiEnabled(request);
-        int kafkaUiPort = resolveKafkaUiPort(request);
+  private String renderCompose(EnvironmentCreateRequest request, String projectName) {
+    boolean kafkaUiEnabled = isKafkaUiEnabled(request);
+    int kafkaUiPort = resolveKafkaUiPort(request);
 
-        String kafkaImage = request.kafkaImage() == null || request.kafkaImage().isBlank()
-                ? "confluentinc/cp-kafka:7.5.0"
-                : request.kafkaImage();
+    String kafkaImage =
+        request.kafkaImage() == null || request.kafkaImage().isBlank()
+            ? "confluentinc/cp-kafka:7.5.0"
+            : request.kafkaImage();
 
-        String kafkaUiImage = request.kafkaUiImage() == null || request.kafkaUiImage().isBlank()
-                ? "provectuslabs/kafka-ui:latest"
-                : request.kafkaUiImage();
+    String kafkaUiImage =
+        request.kafkaUiImage() == null || request.kafkaUiImage().isBlank()
+            ? "provectuslabs/kafka-ui:latest"
+            : request.kafkaUiImage();
 
-        String brokerServices = renderBrokerServices(request, kafkaImage);
-        String kafkaUiService = kafkaUiEnabled
+    String brokerServices = renderBrokerServices(request, kafkaImage);
+    String kafkaUiService =
+        kafkaUiEnabled
             ? renderKafkaUiService(request.brokerCount(), kafkaUiPort, kafkaUiImage, projectName)
             : "";
 
-        return composeTemplate
-            .replace("{{BROKER_SERVICES}}", brokerServices)
-            .replace("{{KAFKA_UI_SERVICE}}", kafkaUiService);
+    return composeTemplate
+        .replace("{{BROKER_SERVICES}}", brokerServices)
+        .replace("{{KAFKA_UI_SERVICE}}", kafkaUiService);
+  }
+
+  private boolean isKafkaUiEnabled(EnvironmentCreateRequest request) {
+    return request.kafkaUiEnabled() == null || request.kafkaUiEnabled();
+  }
+
+  private int resolveKafkaUiPort(EnvironmentCreateRequest request) {
+    return request.kafkaUiPort() == null ? defaultKafkaUiPort : request.kafkaUiPort();
+  }
+
+  private String renderBrokerServices(EnvironmentCreateRequest request, String kafkaImage) {
+    List<String> services = new ArrayList<>();
+    String quorumVoters = voters(request.brokerCount());
+    for (int i = 1; i <= request.brokerCount(); i++) {
+      int externalPort = request.externalPortBase() + (i - 1);
+      services.add(
+          renderBrokerService(
+              i, externalPort, request.replicationFactor(), quorumVoters, kafkaImage));
+    }
+    return String.join("\n\n", services);
+  }
+
+  private String renderBrokerService(
+      int brokerIndex,
+      int externalPort,
+      int replicationFactor,
+      String quorumVoters,
+      String kafkaImage) {
+    return brokerServiceTemplate
+        .replace("{{BROKER_INDEX}}", String.valueOf(brokerIndex))
+        .replace("{{KAFKA_IMAGE}}", kafkaImage)
+        .replace("{{EXTERNAL_PORT}}", String.valueOf(externalPort))
+        .replace("{{QUORUM_VOTERS}}", quorumVoters)
+        .replace("{{REPLICATION_FACTOR}}", String.valueOf(replicationFactor))
+        .replace("{{CLUSTER_ID}}", clusterId);
+  }
+
+  private String renderKafkaUiService(
+      int brokerCount, int kafkaUiPort, String kafkaUiImage, String projectName) {
+    StringBuilder dependsOn = new StringBuilder();
+    for (int i = 1; i <= brokerCount; i++) {
+      dependsOn.append("      - kafka").append(i).append("\n");
     }
 
-    private boolean isKafkaUiEnabled(EnvironmentCreateRequest request) {
-        return request.kafkaUiEnabled() == null || request.kafkaUiEnabled();
-    }
+    return kafkaUiServiceTemplate
+        .replace("{{KAFKA_UI_IMAGE}}", kafkaUiImage)
+        .replace("{{KAFKA_UI_PORT}}", String.valueOf(kafkaUiPort))
+        .replace("{{PROJECT_NAME}}", projectName)
+        .replace("{{INTERNAL_BOOTSTRAP_SERVERS}}", internalBootstrapServers(brokerCount))
+        .replace("{{BROKER_DEPENDS_ON}}", dependsOn.toString().stripTrailing());
+  }
 
-    private int resolveKafkaUiPort(EnvironmentCreateRequest request) {
-        return request.kafkaUiPort() == null ? defaultKafkaUiPort : request.kafkaUiPort();
+  private String loadClasspathTemplate(String path) throws IOException {
+    String templatePath = Objects.requireNonNull(path, "Template path must not be null");
+    ClassPathResource resource = new ClassPathResource(templatePath);
+    if (!resource.exists()) {
+      throw new IOException("Template not found: " + templatePath);
     }
-
-    private String renderBrokerServices(EnvironmentCreateRequest request, String kafkaImage) {
-        List<String> services = new ArrayList<>();
-        String quorumVoters = voters(request.brokerCount());
-        for (int i = 1; i <= request.brokerCount(); i++) {
-            int externalPort = request.externalPortBase() + (i - 1);
-            services.add(renderBrokerService(i, externalPort, request.replicationFactor(), quorumVoters, kafkaImage));
-        }
-        return String.join("\n\n", services);
+    try (var inputStream = resource.getInputStream()) {
+      return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
     }
+  }
 
-    private String renderBrokerService(int brokerIndex,
-            int externalPort,
-            int replicationFactor,
-            String quorumVoters,
-            String kafkaImage) {
-        return brokerServiceTemplate
-                .replace("{{BROKER_INDEX}}", String.valueOf(brokerIndex))
-                .replace("{{KAFKA_IMAGE}}", kafkaImage)
-                .replace("{{EXTERNAL_PORT}}", String.valueOf(externalPort))
-                .replace("{{QUORUM_VOTERS}}", quorumVoters)
-                .replace("{{REPLICATION_FACTOR}}", String.valueOf(replicationFactor))
-                .replace("{{CLUSTER_ID}}", clusterId);
+  private String voters(int brokerCount) {
+    List<String> voters = new ArrayList<>();
+    for (int i = 1; i <= brokerCount; i++) {
+      voters.add(i + "@kafka" + i + ":9093");
     }
+    return String.join(",", voters);
+  }
 
-    private String renderKafkaUiService(int brokerCount, int kafkaUiPort, String kafkaUiImage, String projectName) {
-        StringBuilder dependsOn = new StringBuilder();
-        for (int i = 1; i <= brokerCount; i++) {
-            dependsOn.append("      - kafka").append(i).append("\n");
-        }
-
-        return kafkaUiServiceTemplate
-                .replace("{{KAFKA_UI_IMAGE}}", kafkaUiImage)
-                .replace("{{KAFKA_UI_PORT}}", String.valueOf(kafkaUiPort))
-                .replace("{{PROJECT_NAME}}", projectName)
-                .replace("{{INTERNAL_BOOTSTRAP_SERVERS}}", internalBootstrapServers(brokerCount))
-                .replace("{{BROKER_DEPENDS_ON}}", dependsOn.toString().stripTrailing());
+  private String internalBootstrapServers(int brokerCount) {
+    List<String> brokers = new ArrayList<>();
+    for (int i = 1; i <= brokerCount; i++) {
+      brokers.add("kafka" + i + ":9092");
     }
+    return String.join(",", brokers);
+  }
 
-    private String loadClasspathTemplate(String path) throws IOException {
-        String templatePath = Objects.requireNonNull(path, "Template path must not be null");
-        ClassPathResource resource = new ClassPathResource(templatePath);
-        if (!resource.exists()) {
-            throw new IOException("Template not found: " + templatePath);
-        }
-        try (var inputStream = resource.getInputStream()) {
-            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        }
+  private String externalBootstrapServers(int externalPortBase, int brokerCount) {
+    List<String> brokers = new ArrayList<>();
+    for (int i = 0; i < brokerCount; i++) {
+      brokers.add("localhost:" + (externalPortBase + i));
     }
+    return String.join(",", brokers);
+  }
 
-    private String voters(int brokerCount) {
-        List<String> voters = new ArrayList<>();
-        for (int i = 1; i <= brokerCount; i++) {
-            voters.add(i + "@kafka" + i + ":9093");
-        }
-        return String.join(",", voters);
-    }
-
-    private String internalBootstrapServers(int brokerCount) {
-        List<String> brokers = new ArrayList<>();
-        for (int i = 1; i <= brokerCount; i++) {
-            brokers.add("kafka" + i + ":9092");
-        }
-        return String.join(",", brokers);
-    }
-
-    private String externalBootstrapServers(int externalPortBase, int brokerCount) {
-        List<String> brokers = new ArrayList<>();
-        for (int i = 0; i < brokerCount; i++) {
-            brokers.add("localhost:" + (externalPortBase + i));
-        }
-        return String.join(",", brokers);
-    }
-
-    private String sanitize(String name) {
-        return name.toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9-]", "-")
-                .replaceAll("-+", "-")
-                .replaceAll("^-|-$", "");
-    }
+  private String sanitize(String name) {
+    return name.toLowerCase(Locale.ROOT)
+        .replaceAll("[^a-z0-9-]", "-")
+        .replaceAll("-+", "-")
+        .replaceAll("^-|-$", "");
+  }
 }

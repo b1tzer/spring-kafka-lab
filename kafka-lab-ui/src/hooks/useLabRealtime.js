@@ -1,24 +1,24 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 const RECONNECT_DELAY_MS = 1500;
 
 const normalizeWsUrl = (rawUrl) => {
   if (!rawUrl) {
-    return '';
+    return "";
   }
 
   const url = String(rawUrl).trim();
   if (!url) {
-    return '';
+    return "";
   }
 
   if (/^https?:\/\//i.test(url)) {
-    const converted = url.replace(/^http/i, 'ws');
+    const converted = url.replace(/^http/i, "ws");
     try {
       new URL(converted);
       return converted;
     } catch (_error) {
-      return '';
+      return "";
     }
   }
 
@@ -27,29 +27,29 @@ const normalizeWsUrl = (rawUrl) => {
       new URL(url);
       return url;
     } catch (_error) {
-      return '';
+      return "";
     }
   }
 
   if (/^wss?:/i.test(url)) {
     const secure = /^wss:/i.test(url);
-    const converted = `${secure ? 'wss' : 'ws'}://${url.replace(/^wss?:\/*/i, '')}`;
+    const converted = `${secure ? "wss" : "ws"}://${url.replace(/^wss?:\/*/i, "")}`;
     try {
       new URL(converted);
       return converted;
     } catch (_error) {
-      return '';
+      return "";
     }
   }
 
-  if (url.startsWith('/')) {
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  if (url.startsWith("/")) {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
     const converted = `${protocol}://${window.location.host}${url}`;
     try {
       new URL(converted);
       return converted;
     } catch (_error) {
-      return '';
+      return "";
     }
   }
 
@@ -57,12 +57,12 @@ const normalizeWsUrl = (rawUrl) => {
     new URL(url);
     return url;
   } catch (_error) {
-    return '';
+    return "";
   }
 };
 
 const buildWsCandidates = () => {
-  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   const envWsUrl = import.meta.env.VITE_LAB_WS_URL;
   const envApiBase = import.meta.env.VITE_API_BASE_URL;
   const candidates = [];
@@ -75,14 +75,14 @@ const buildWsCandidates = () => {
   }
 
   if (envApiBase && /^https?:\/\//i.test(envApiBase)) {
-    const wsBase = envApiBase.replace(/^http/i, 'ws').replace(/\/$/, '');
+    const wsBase = envApiBase.replace(/^http/i, "ws").replace(/\/$/, "");
     candidates.push(`${wsBase}/ws/events`);
   }
 
   candidates.push(`${protocol}://${window.location.host}/api/ws/events`);
   candidates.push(`${protocol}://${window.location.host}/ws/events`);
 
-  if (window.location.port && window.location.port !== '8080') {
+  if (window.location.port && window.location.port !== "8080") {
     candidates.push(`${protocol}://${window.location.hostname}:8080/ws/events`);
   }
 
@@ -117,8 +117,7 @@ const useLabRealtime = (onEvent) => {
         try {
           const payload = JSON.parse(event.data);
           onEventRef.current?.(payload);
-        } catch (_error) {
-        }
+        } catch (_error) {}
       };
 
       ws.onclose = () => {
@@ -134,8 +133,7 @@ const useLabRealtime = (onEvent) => {
         reconnectTimer = window.setTimeout(connect, RECONNECT_DELAY_MS);
       };
 
-      ws.onerror = () => {
-      };
+      ws.onerror = () => {};
     };
 
     connect();
@@ -151,7 +149,7 @@ const useLabRealtime = (onEvent) => {
         } else if (ws.readyState === WebSocket.CONNECTING) {
           ws.onopen = () => ws.close();
         }
-      };
+      }
     };
   }, []);
 };

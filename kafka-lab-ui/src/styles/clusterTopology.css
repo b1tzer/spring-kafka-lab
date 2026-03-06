@@ -1,5 +1,7 @@
 .traffic-card {
-  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .producer-pulse {

@@ -8,34 +8,35 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import xpro.wang.kafkalab.server.service.EnvironmentAccessGuardService;
 
 /**
- * Intercepts protected Kafka APIs and verifies that at least one
- * environment is currently running.
+ * Intercepts protected Kafka APIs and verifies that at least one environment is currently running.
  */
 @Component
 public class RunningEnvironmentInterceptor implements HandlerInterceptor {
 
-    private final EnvironmentAccessGuardService environmentAccessGuardService;
+  private final EnvironmentAccessGuardService environmentAccessGuardService;
 
-    public RunningEnvironmentInterceptor(EnvironmentAccessGuardService environmentAccessGuardService) {
-        this.environmentAccessGuardService = environmentAccessGuardService;
-    }
+  public RunningEnvironmentInterceptor(
+      EnvironmentAccessGuardService environmentAccessGuardService) {
+    this.environmentAccessGuardService = environmentAccessGuardService;
+  }
 
-    /**
-     * Validates running environment precondition before request handling.
-     *
-     * @param request current request
-     * @param response current response
-     * @param handler selected handler
-     * @return true when processing can continue
-     */
-    @Override
-    public boolean preHandle(@NonNull HttpServletRequest request,
-            @NonNull HttpServletResponse response,
-            @NonNull Object handler) {
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-            return true;
-        }
-        environmentAccessGuardService.ensureRunningEnvironment();
-        return true;
+  /**
+   * Validates running environment precondition before request handling.
+   *
+   * @param request current request
+   * @param response current response
+   * @param handler selected handler
+   * @return true when processing can continue
+   */
+  @Override
+  public boolean preHandle(
+      @NonNull HttpServletRequest request,
+      @NonNull HttpServletResponse response,
+      @NonNull Object handler) {
+    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+      return true;
     }
+    environmentAccessGuardService.ensureRunningEnvironment();
+    return true;
+  }
 }

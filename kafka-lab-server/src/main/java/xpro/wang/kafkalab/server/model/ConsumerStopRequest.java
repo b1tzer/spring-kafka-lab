@@ -7,7 +7,4 @@ import jakarta.validation.constraints.NotBlank;
  *
  * @param groupId consumer group id
  */
-public record ConsumerStopRequest(
-        @NotBlank String groupId
-) {
-}
+public record ConsumerStopRequest(@NotBlank String groupId) {}
