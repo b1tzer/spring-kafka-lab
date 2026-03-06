@@ -63,7 +63,7 @@
                     <java>
                         <eclipse>
                             <version>4.26</version>
-                            <file>${project.basedir}/../config/eclipse-java-formatter.xml</file>
+                            <file>${project.basedir}/../.githooks/config/eclipse-java-formatter.xml</file>
                         </eclipse>
                         <removeUnusedImports />
                     </java>
