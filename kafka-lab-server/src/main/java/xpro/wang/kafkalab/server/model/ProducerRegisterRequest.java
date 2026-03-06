@@ -6,7 +6,10 @@ import java.util.List;
 /**
  * Request payload for registering a managed producer.
  *
- * @param producerId producer client id, optional
- * @param topics subscribed topics for sending scope
+ * @param producerId
+ *            producer client id, optional
+ * @param topics
+ *            subscribed topics for sending scope
  */
-public record ProducerRegisterRequest(String producerId, @NotEmpty List<String> topics) {}
+public record ProducerRegisterRequest(String producerId, @NotEmpty List<String> topics) {
+}

@@ -15,22 +15,23 @@ import xpro.wang.kafkalab.server.service.ScenarioEngineService;
 @RequestMapping("/scenario")
 public class ScenarioController {
 
-  private final ScenarioEngineService scenarioEngineService;
+    private final ScenarioEngineService scenarioEngineService;
 
-  public ScenarioController(ScenarioEngineService scenarioEngineService) {
-    this.scenarioEngineService = scenarioEngineService;
-  }
+    public ScenarioController(ScenarioEngineService scenarioEngineService) {
+        this.scenarioEngineService = scenarioEngineService;
+    }
 
-  /**
-   * Executes a named experiment scenario.
-   *
-   * @param request scenario request payload
-   * @return scenario execution response
-   * @throws Exception when execution fails
-   */
-  @PostMapping("/run")
-  public ApiResponse<Map<String, Object>> run(@Valid @RequestBody ScenarioRunRequest request)
-      throws Exception {
-    return ApiResponse.ok("Scenario executed", scenarioEngineService.run(request));
-  }
+    /**
+     * Executes a named experiment scenario.
+     *
+     * @param request
+     *            scenario request payload
+     * @return scenario execution response
+     * @throws Exception
+     *             when execution fails
+     */
+    @PostMapping("/run")
+    public ApiResponse<Map<String, Object>> run(@Valid @RequestBody ScenarioRunRequest request) throws Exception {
+        return ApiResponse.ok("Scenario executed", scenarioEngineService.run(request));
+    }
 }

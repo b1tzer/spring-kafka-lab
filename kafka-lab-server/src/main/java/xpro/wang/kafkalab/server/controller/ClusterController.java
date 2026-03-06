@@ -14,53 +14,57 @@ import xpro.wang.kafkalab.server.service.ClusterAdminService;
 @RequestMapping
 public class ClusterController {
 
-  private final ClusterAdminService clusterAdminService;
+    private final ClusterAdminService clusterAdminService;
 
-  public ClusterController(ClusterAdminService clusterAdminService) {
-    this.clusterAdminService = clusterAdminService;
-  }
+    public ClusterController(ClusterAdminService clusterAdminService) {
+        this.clusterAdminService = clusterAdminService;
+    }
 
-  /**
-   * Returns cluster summary.
-   *
-   * @return cluster summary response
-   * @throws Exception when cluster query fails
-   */
-  @GetMapping("/cluster")
-  public ApiResponse<ClusterSummary> cluster() throws Exception {
-    return ApiResponse.ok("Cluster fetched", clusterAdminService.clusterSummary());
-  }
+    /**
+     * Returns cluster summary.
+     *
+     * @return cluster summary response
+     * @throws Exception
+     *             when cluster query fails
+     */
+    @GetMapping("/cluster")
+    public ApiResponse<ClusterSummary> cluster() throws Exception {
+        return ApiResponse.ok("Cluster fetched", clusterAdminService.clusterSummary());
+    }
 
-  /**
-   * Returns broker list.
-   *
-   * @return broker response
-   * @throws Exception when broker query fails
-   */
-  @GetMapping("/brokers")
-  public ApiResponse<List<String>> brokers() throws Exception {
-    return ApiResponse.ok("Brokers fetched", clusterAdminService.brokers());
-  }
+    /**
+     * Returns broker list.
+     *
+     * @return broker response
+     * @throws Exception
+     *             when broker query fails
+     */
+    @GetMapping("/brokers")
+    public ApiResponse<List<String>> brokers() throws Exception {
+        return ApiResponse.ok("Brokers fetched", clusterAdminService.brokers());
+    }
 
-  /**
-   * Returns dashboard metrics.
-   *
-   * @return dashboard response
-   * @throws Exception when query fails
-   */
-  @GetMapping("/dashboard")
-  public ApiResponse<Map<String, Object>> dashboard() throws Exception {
-    return ApiResponse.ok("Dashboard data fetched", clusterAdminService.dashboard());
-  }
+    /**
+     * Returns dashboard metrics.
+     *
+     * @return dashboard response
+     * @throws Exception
+     *             when query fails
+     */
+    @GetMapping("/dashboard")
+    public ApiResponse<Map<String, Object>> dashboard() throws Exception {
+        return ApiResponse.ok("Dashboard data fetched", clusterAdminService.dashboard());
+    }
 
-  /**
-   * Returns cluster topology visualization data.
-   *
-   * @return topology response
-   * @throws Exception when query fails
-   */
-  @GetMapping("/cluster/topology")
-  public ApiResponse<Map<String, Object>> topology() throws Exception {
-    return ApiResponse.ok("Cluster topology fetched", clusterAdminService.topology());
-  }
+    /**
+     * Returns cluster topology visualization data.
+     *
+     * @return topology response
+     * @throws Exception
+     *             when query fails
+     */
+    @GetMapping("/cluster/topology")
+    public ApiResponse<Map<String, Object>> topology() throws Exception {
+        return ApiResponse.ok("Cluster topology fetched", clusterAdminService.topology());
+    }
 }

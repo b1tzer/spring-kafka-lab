@@ -21,86 +21,69 @@ import xpro.wang.kafkalab.server.model.LabRealtimeEventType;
 @Component
 public class LabRealtimeWebSocketHandler extends TextWebSocketHandler {
 
-  private static final Logger log = LoggerFactory.getLogger(LabRealtimeWebSocketHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(LabRealtimeWebSocketHandler.class);
 
-  private final ObjectMapper objectMapper;
-  private final LabActivityLogService labActivityLogService;
-  private final Set<WebSocketSession> sessions = ConcurrentHashMap.newKeySet();
+    private final ObjectMapper objectMapper;
+    private final LabActivityLogService labActivityLogService;
+    private final Set<WebSocketSession> sessions = ConcurrentHashMap.newKeySet();
 
-  public LabRealtimeWebSocketHandler(
-      ObjectMapper objectMapper, LabActivityLogService labActivityLogService) {
-    this.objectMapper = objectMapper;
-    this.labActivityLogService = labActivityLogService;
-  }
-
-  @Override
-  public void afterConnectionEstablished(@NonNull WebSocketSession session) {
-    sessions.add(session);
-    publishToSession(
-        session,
-        LabRealtimeEventType.ACTIVITY_LOG_SNAPSHOT.name(),
-        Map.of("logs", labActivityLogService.recent(120)));
-  }
-
-  @Override
-  public void afterConnectionClosed(
-      @NonNull WebSocketSession session, @NonNull CloseStatus status) {
-    sessions.remove(session);
-  }
-
-  @Override
-  public void handleTransportError(
-      @NonNull WebSocketSession session, @NonNull Throwable exception) {
-    sessions.remove(session);
-  }
-
-  public void publish(String type, Map<String, Object> data) {
-    if (sessions.isEmpty()) {
-      return;
+    public LabRealtimeWebSocketHandler(ObjectMapper objectMapper, LabActivityLogService labActivityLogService) {
+        this.objectMapper = objectMapper;
+        this.labActivityLogService = labActivityLogService;
     }
 
-    try {
-      String payload =
-          objectMapper.writeValueAsString(
-              Map.of(
-                  "type", type,
-                  "time", Instant.now().toString(),
-                  "data", data));
+    @Override
+    public void afterConnectionEstablished(@NonNull WebSocketSession session) {
+        sessions.add(session);
+        publishToSession(session, LabRealtimeEventType.ACTIVITY_LOG_SNAPSHOT.name(),
+                Map.of("logs", labActivityLogService.recent(120)));
+    }
 
-      for (WebSocketSession session : sessions) {
-        if (!session.isOpen()) {
-          sessions.remove(session);
-          continue;
+    @Override
+    public void afterConnectionClosed(@NonNull WebSocketSession session, @NonNull CloseStatus status) {
+        sessions.remove(session);
+    }
+
+    @Override
+    public void handleTransportError(@NonNull WebSocketSession session, @NonNull Throwable exception) {
+        sessions.remove(session);
+    }
+
+    public void publish(String type, Map<String, Object> data) {
+        if (sessions.isEmpty()) {
+            return;
         }
-        session.sendMessage(new TextMessage(Objects.requireNonNull(payload)));
-      }
-    } catch (IOException ex) {
-      log.warn("Failed to publish websocket event {}: {}", type, ex.getMessage());
-    }
-  }
 
-  public void publish(LabRealtimeEventType eventType, Map<String, Object> data) {
-    publish(eventType.name(), data);
-  }
+        try {
+            String payload = objectMapper
+                    .writeValueAsString(Map.of("type", type, "time", Instant.now().toString(), "data", data));
 
-  private void publishToSession(WebSocketSession session, String type, Map<String, Object> data) {
-    if (!session.isOpen()) {
-      return;
+            for (WebSocketSession session : sessions) {
+                if (!session.isOpen()) {
+                    sessions.remove(session);
+                    continue;
+                }
+                session.sendMessage(new TextMessage(Objects.requireNonNull(payload)));
+            }
+        } catch (IOException ex) {
+            log.warn("Failed to publish websocket event {}: {}", type, ex.getMessage());
+        }
     }
-    try {
-      String payload =
-          objectMapper.writeValueAsString(
-              Map.of(
-                  "type", type,
-                  "time", Instant.now().toString(),
-                  "data", data));
-      session.sendMessage(new TextMessage(Objects.requireNonNull(payload)));
-    } catch (IOException ex) {
-      log.warn(
-          "Failed to publish websocket event {} to session {}: {}",
-          type,
-          session.getId(),
-          ex.getMessage());
+
+    public void publish(LabRealtimeEventType eventType, Map<String, Object> data) {
+        publish(eventType.name(), data);
     }
-  }
+
+    private void publishToSession(WebSocketSession session, String type, Map<String, Object> data) {
+        if (!session.isOpen()) {
+            return;
+        }
+        try {
+            String payload = objectMapper
+                    .writeValueAsString(Map.of("type", type, "time", Instant.now().toString(), "data", data));
+            session.sendMessage(new TextMessage(Objects.requireNonNull(payload)));
+        } catch (IOException ex) {
+            log.warn("Failed to publish websocket event {} to session {}: {}", type, session.getId(), ex.getMessage());
+        }
+    }
 }

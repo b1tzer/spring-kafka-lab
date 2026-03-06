@@ -6,6 +6,8 @@ import java.util.List;
 /**
  * Request payload for updating subscribed topics.
  *
- * @param topics subscribed topics list
+ * @param topics
+ *            subscribed topics list
  */
-public record SubscriptionTopicsUpdateRequest(@NotEmpty List<String> topics) {}
+public record SubscriptionTopicsUpdateRequest(@NotEmpty List<String> topics) {
+}

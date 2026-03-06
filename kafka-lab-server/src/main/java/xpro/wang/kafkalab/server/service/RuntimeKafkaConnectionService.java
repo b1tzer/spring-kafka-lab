@@ -7,27 +7,27 @@ import xpro.wang.kafkalab.server.model.EnvironmentInstance;
 @Service
 public class RuntimeKafkaConnectionService {
 
-  private final EnvironmentManagerService environmentManagerService;
+    private final EnvironmentManagerService environmentManagerService;
 
-  public RuntimeKafkaConnectionService(EnvironmentManagerService environmentManagerService) {
-    this.environmentManagerService = environmentManagerService;
-  }
+    public RuntimeKafkaConnectionService(EnvironmentManagerService environmentManagerService) {
+        this.environmentManagerService = environmentManagerService;
+    }
 
-  /**
-   * Returns currently running environment metadata.
-   *
-   * @return running environment instance
-   */
-  public EnvironmentInstance runningEnvironment() {
-    return environmentManagerService.getRunningEnvironment();
-  }
+    /**
+     * Returns currently running environment metadata.
+     *
+     * @return running environment instance
+     */
+    public EnvironmentInstance runningEnvironment() {
+        return environmentManagerService.getRunningEnvironment();
+    }
 
-  /**
-   * Returns bootstrap server list for Kafka client connections.
-   *
-   * @return bootstrap server string
-   */
-  public String bootstrapServers() {
-    return runningEnvironment().bootstrapServers();
-  }
+    /**
+     * Returns bootstrap server list for Kafka client connections.
+     *
+     * @return bootstrap server string
+     */
+    public String bootstrapServers() {
+        return runningEnvironment().bootstrapServers();
+    }
 }

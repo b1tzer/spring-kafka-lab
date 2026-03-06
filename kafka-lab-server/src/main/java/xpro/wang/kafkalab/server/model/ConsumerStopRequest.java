@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 /**
  * Request payload for stopping a managed consumer group simulation.
  *
- * @param groupId consumer group id
+ * @param groupId
+ *            consumer group id
  */
-public record ConsumerStopRequest(@NotBlank String groupId) {}
+public record ConsumerStopRequest(@NotBlank String groupId) {
+}

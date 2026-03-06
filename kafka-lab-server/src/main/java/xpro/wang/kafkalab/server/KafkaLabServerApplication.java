@@ -7,12 +7,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class KafkaLabServerApplication {
 
-  /**
-   * Application entry point.
-   *
-   * @param args command-line arguments
-   */
-  public static void main(String[] args) {
-    SpringApplication.run(KafkaLabServerApplication.class, args);
-  }
+    /**
+     * Application entry point.
+     *
+     * @param args
+     *            command-line arguments
+     */
+    public static void main(String[] args) {
+        SpringApplication.run(KafkaLabServerApplication.class, args);
+    }
 }

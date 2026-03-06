@@ -13,18 +13,18 @@ import org.springframework.context.annotation.Lazy;
 @Configuration
 public class KafkaAdminConfig {
 
-  /**
-   * Creates a lazily initialized {@link AdminClient} bean.
-   *
-   * @param bootstrapServers bootstrap server list
-   * @return admin client instance
-   */
-  @Bean
-  @Lazy
-  public AdminClient adminClient(
-      @Value("${spring.kafka.bootstrap-servers}") String bootstrapServers) {
-    Map<String, Object> configs = new HashMap<>();
-    configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-    return AdminClient.create(configs);
-  }
+    /**
+     * Creates a lazily initialized {@link AdminClient} bean.
+     *
+     * @param bootstrapServers
+     *            bootstrap server list
+     * @return admin client instance
+     */
+    @Bean
+    @Lazy
+    public AdminClient adminClient(@Value("${spring.kafka.bootstrap-servers}") String bootstrapServers) {
+        Map<String, Object> configs = new HashMap<>();
+        configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        return AdminClient.create(configs);
+    }
 }

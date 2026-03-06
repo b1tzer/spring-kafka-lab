@@ -12,14 +12,14 @@ import xpro.wang.kafkalab.server.service.LabRealtimeWebSocketHandler;
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
 
-  private final @NonNull LabRealtimeWebSocketHandler labRealtimeWebSocketHandler;
+    private final @NonNull LabRealtimeWebSocketHandler labRealtimeWebSocketHandler;
 
-  public WebSocketConfig(@NonNull LabRealtimeWebSocketHandler labRealtimeWebSocketHandler) {
-    this.labRealtimeWebSocketHandler = labRealtimeWebSocketHandler;
-  }
+    public WebSocketConfig(@NonNull LabRealtimeWebSocketHandler labRealtimeWebSocketHandler) {
+        this.labRealtimeWebSocketHandler = labRealtimeWebSocketHandler;
+    }
 
-  @Override
-  public void registerWebSocketHandlers(@NonNull WebSocketHandlerRegistry registry) {
-    registry.addHandler(labRealtimeWebSocketHandler, "/ws/events").setAllowedOriginPatterns("*");
-  }
+    @Override
+    public void registerWebSocketHandlers(@NonNull WebSocketHandlerRegistry registry) {
+        registry.addHandler(labRealtimeWebSocketHandler, "/ws/events").setAllowedOriginPatterns("*");
+    }
 }

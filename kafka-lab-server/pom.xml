@@ -61,9 +61,10 @@
                 <version>2.43.0</version>
                 <configuration>
                     <java>
-                        <googleJavaFormat>
-                            <version>1.17.0</version>
-                        </googleJavaFormat>
+                        <eclipse>
+                            <version>4.26</version>
+                            <file>${project.basedir}/../config/eclipse-java-formatter.xml</file>
+                        </eclipse>
                         <removeUnusedImports />
                     </java>
                 </configuration>
